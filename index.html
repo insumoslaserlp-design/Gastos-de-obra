@@ -1,0 +1,1010 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b6bcb">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>Gastos de Obra</title>
+<style>
+:root{
+  --bg:#f4f5f7; --card:#ffffff; --ink:#1b1f24; --muted:#636b75; --line:#e2e5ea;
+  --accent:#0b6bcb; --accent-ink:#ffffff; --ok:#1a7f4b; --warn:#b26a00; --bad:#c0392b; --wa:#1fa855; --bar2:#8a6fd1;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121417; --card:#1c2025; --ink:#eef0f3; --muted:#9aa3ad; --line:#2c3138;
+    --accent:#4c9cf0; --accent-ink:#0b1320; --ok:#3fbf7f; --warn:#e0a03c; --bad:#ef6b5b; --wa:#2fc56a; --bar2:#a990ec;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121417; --card:#1c2025; --ink:#eef0f3; --muted:#9aa3ad; --line:#2c3138;
+  --accent:#4c9cf0; --accent-ink:#0b1320; --ok:#3fbf7f; --warn:#e0a03c; --bad:#ef6b5b; --wa:#2fc56a; --bar2:#a990ec;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+header h1{font-size:18px;margin:0}
+.pill{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap;background:none;font-family:inherit}
+.pill.off{color:var(--warn);border-color:var(--warn)}
+main{max-width:620px;margin:0 auto;padding:16px 16px 96px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.card h2{font-size:16px;margin:0 0 12px}
+.card h3{font-size:14px;margin:14px 0 6px;color:var(--muted);font-weight:600}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+input,select,textarea{width:100%;font:inherit;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.row{display:flex;gap:10px}.row>*{flex:1;min-width:0}
+.btn{display:block;width:100%;padding:14px;border:0;border-radius:12px;font:600 16px system-ui;background:var(--accent);color:var(--accent-ink);margin-top:14px;cursor:pointer}
+.btn:disabled{opacity:.5}
+.btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--line)}
+.btn.wa{background:var(--wa);color:#fff}
+.btn.sm{padding:8px 12px;font-size:13px;margin-top:6px;width:auto;display:inline-block}
+.btn.bad{background:transparent;color:var(--bad);border:1px solid var(--line)}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{flex:1;padding:10px 6px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:500 14px system-ui;cursor:pointer}
+.seg button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:14px system-ui;cursor:pointer}
+.chips button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.chips button.add{border-style:dashed;color:var(--accent)}
+.muted{color:var(--muted);font-size:13px}
+.list{list-style:none;padding:0;margin:0}
+.list li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.list li:last-child{border-bottom:0}
+.tag{font-size:11px;padding:2px 6px;border-radius:6px;background:var(--bg);border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.tag.ok{color:var(--ok);border-color:var(--ok)}
+.tag.warn{color:var(--warn);border-color:var(--warn)}
+.note{border:1px dashed var(--warn);color:var(--warn);border-radius:10px;padding:10px;font-size:14px;margin-bottom:12px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kpi{background:var(--bg);border-radius:10px;padding:10px}
+.kpi b{display:block;font-size:18px}
+.pos{color:var(--ok)}.neg{color:var(--bad)}
+nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:6px 4px calc(6px + env(safe-area-inset-bottom));z-index:6}
+nav button{flex:1;background:none;border:0;color:var(--muted);font:12px system-ui;padding:6px 2px;cursor:pointer}
+nav button span{display:block;font-size:20px}
+nav button.on{color:var(--accent);font-weight:600}
+pre.msg{white-space:pre-wrap;background:var(--bg);border-radius:10px;padding:12px;font:14px/1.5 system-ui;margin:0}
+.toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:40;max-width:90vw}
+.toast.show{opacity:1}
+.barrow{display:grid;grid-template-columns:100px 1fr 92px;gap:8px;align-items:center;font-size:13px;margin:6px 0}
+.bar{height:10px;border-radius:5px;background:var(--accent);min-width:2px}
+.bar.b2{background:var(--bar2)}
+.hide{display:none!important}
+.line{display:flex;justify-content:space-between;gap:10px;padding:6px 0;font-size:15px}
+.line.tot{border-top:1px solid var(--line);margin-top:6px;padding-top:10px;font-weight:700;font-size:17px}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.t{border-collapse:collapse;width:100%;font-size:13px;min-width:460px}
+table.t th,table.t td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+table.t th:first-child,table.t td:first-child{text-align:left}
+table.t th{color:var(--muted);font-weight:600}
+.inline-add{display:flex;gap:6px;margin-top:8px}
+.inline-add input{padding:8px 10px}
+.inline-add button{padding:8px 12px;border-radius:10px;border:0;background:var(--accent);color:var(--accent-ink);font:600 14px system-ui}
+label.check{display:flex;align-items:center;gap:8px;color:var(--ink);font-size:15px;margin-top:12px}
+label.check input{width:22px;height:22px;padding:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.center{max-width:420px;margin:40px auto;padding:0 16px}
+.err{color:var(--bad);font-size:14px;margin-top:8px}
+a{color:var(--accent)}
+#doc{position:fixed;inset:0;z-index:30;background:var(--bg);overflow:auto;display:none}
+#doc.open{display:block}
+#doc .bar-top{position:sticky;top:0;background:var(--card);border-bottom:1px solid var(--line);padding:10px 16px;display:flex;gap:8px}
+#doc .bar-top button{flex:1;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:600 14px system-ui;cursor:pointer}
+#doc .bar-top button.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.paper{max-width:760px;margin:16px auto;background:#fff;color:#111;padding:28px 24px;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.15);font-size:13px}
+.paper h1{font-size:20px;margin:0 0 2px}
+.paper h2{font-size:15px;margin:20px 0 6px;border-bottom:2px solid #111;padding-bottom:3px}
+.paper table{width:100%;border-collapse:collapse}
+.paper th,.paper td{padding:5px 4px;border-bottom:1px solid #ddd;text-align:right}
+.paper th:first-child,.paper td:first-child{text-align:left}
+.paper th{background:#f1f3f5}
+.paper .sub{color:#555}
+.paper .kp{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.paper .kp div{border:1px solid #ddd;border-radius:6px;padding:8px}
+.paper .kp b{display:block;font-size:15px}
+@media (max-width:520px){.paper{padding:18px 14px;margin:10px}.paper .kp{grid-template-columns:1fr 1fr}}
+@media print{
+  body>*:not(#doc){display:none!important}
+  #doc{position:static;display:block!important;background:#fff}
+  #doc .bar-top{display:none}
+  .paper{box-shadow:none;margin:0;max-width:none;padding:0}
+}
+</style>
+</head>
+<body>
+
+<!-- ======= Pantalla de confirmación de pago (enlace de WhatsApp) ======= -->
+<div id="s-confirmar" class="center hide">
+  <div class="card" style="text-align:center">
+    <h2 id="cf-title">Confirmando pago…</h2>
+    <p id="cf-body" class="muted"></p>
+  </div>
+</div>
+
+<!-- ======= Entrar / crear cuenta ======= -->
+<div id="s-login" class="center hide">
+  <h1 style="font-size:24px;margin:0 0 4px">Gastos de Obra</h1>
+  <p class="muted" style="margin:0 0 16px">Registro de gastos, jornadas y pagos</p>
+  <div class="card">
+    <div class="seg" id="lgSeg">
+      <button data-m="in" class="on">Entrar</button>
+      <button data-m="up">Crear cuenta</button>
+    </div>
+    <div id="lg-nombreBox" class="hide"><label>Tu nombre</label><input id="lg-nombre" autocomplete="name"></div>
+    <label>Correo</label><input id="lg-email" type="email" autocomplete="email" inputmode="email">
+    <label>Contraseña</label><input id="lg-pass" type="password" autocomplete="current-password">
+    <button class="btn" id="lg-go">Entrar</button>
+    <p class="err" id="lg-err"></p>
+  </div>
+</div>
+
+<!-- ======= App ======= -->
+<div id="s-app" class="hide">
+<header>
+  <h1>Gastos de Obra</h1>
+  <div style="display:flex;gap:6px;flex:0 0 auto">
+    <button class="pill" id="who" title="Salir"></button>
+    <span class="pill" id="net">En línea</span>
+  </div>
+</header>
+
+<main>
+<!-- CARGAR -->
+<section id="v-cargar">
+  <div class="note hide" id="sinFicha">Tu usuario todavía no está habilitado. Pedile al administrador que te asigne tu rol.</div>
+  <div class="note hide" id="colaBox"></div>
+  <div class="card hide" id="pendCard">
+    <h2>Para aprobar</h2>
+    <p class="muted" style="margin-top:-6px">Lo que cargaron los trabajadores desde su cuenta.</p>
+    <ul class="list" id="pendList"></ul>
+  </div>
+  <div class="note hide" id="draftBox">Tenés un borrador guardado. <a href="#" id="draftDiscard">Descartar</a></div>
+  <div class="card" id="cargaCard">
+    <div class="seg" id="tipoSeg">
+      <button data-t="gasto" class="on">Gasto</button>
+      <button data-t="jornada">Jornada</button>
+      <button data-t="adelanto" data-rol="admin">Adelanto</button>
+      <button data-t="cobro" data-rol="admin">Cobro</button>
+    </div>
+
+    <div id="f-gasto">
+      <label>Monto ($)</label>
+      <input id="g-monto" inputmode="numeric" placeholder="0">
+      <label>Categoría</label>
+      <div class="chips" id="g-cat"></div>
+      <div class="inline-add hide" id="catAdd">
+        <input id="catNew" placeholder="Ej: Gastos médicos">
+        <button id="catOk">Agregar</button>
+      </div>
+      <label>Obra</label>
+      <select id="g-obra"></select>
+      <label>Fecha</label>
+      <input type="date" id="g-fecha">
+      <label>Comprobante (foto)</label>
+      <input type="file" accept="image/*" capture="environment" id="g-foto">
+      <label>Nota (opcional)</label>
+      <input id="g-nota" placeholder="Ej: nafta camioneta">
+    </div>
+
+    <div id="f-jornada" class="hide">
+      <div id="j-trabBox"><label>Trabajador</label><select id="j-trab"></select></div>
+      <label>Obra</label>
+      <select id="j-obra"></select>
+      <div class="row">
+        <div><label>Fecha</label><input type="date" id="j-fecha"></div>
+        <div><label>Horas extra</label><input id="j-extra" inputmode="decimal" placeholder="0"></div>
+      </div>
+      <label class="check"><input type="checkbox" id="j-fer"> Es feriado</label>
+      <p class="muted" id="j-dia"></p>
+      <p class="muted" id="j-calc"></p>
+    </div>
+
+    <div id="f-adelanto" class="hide">
+      <label>Trabajador</label>
+      <select id="a-trab"></select>
+      <label>Monto ($)</label>
+      <input id="a-monto" inputmode="numeric" placeholder="0">
+      <label>Motivo (opcional)</label>
+      <input id="a-nota" placeholder="Ej: pidió para el alquiler">
+      <p class="muted" id="a-saldo"></p>
+    </div>
+
+    <div id="f-cobro" class="hide">
+      <label>Obra</label>
+      <select id="c-obra"></select>
+      <label>Tipo de trabajo</label>
+      <div class="chips" id="c-tipos"></div>
+      <div class="inline-add hide" id="tipoAdd">
+        <input id="tipoNew" placeholder="Ej: Mantenimiento">
+        <button id="tipoOk">Agregar</button>
+      </div>
+      <label>Se cobra</label>
+      <div class="seg" id="c-modo">
+        <button data-m="m2" class="on">Por m²</button>
+        <button data-m="hora">Por hora</button>
+        <button data-m="total">Monto total</button>
+      </div>
+      <div class="row" id="c-m2box">
+        <div><label>m²</label><input id="c-m2" inputmode="decimal" placeholder="0"></div>
+        <div><label>Precio por m²</label><input id="c-pm2" inputmode="numeric" placeholder="0"></div>
+      </div>
+      <div class="row hide" id="c-hbox">
+        <div><label>Horas</label><input id="c-horas" inputmode="decimal" placeholder="0"></div>
+        <div><label>Precio por hora</label><input id="c-ph" inputmode="numeric" placeholder="0"></div>
+      </div>
+      <div id="c-totbox" class="hide"><label>Monto ($)</label><input id="c-total" inputmode="numeric" placeholder="0"></div>
+      <p class="muted" id="c-calc"></p>
+    </div>
+
+    <button class="btn" id="guardar">Guardar</button>
+    <p class="muted" style="text-align:center;margin:8px 0 0">Si no hay señal se guarda en el celular y se sube solo después.</p>
+  </div>
+
+  <div class="card">
+    <h2>Últimas cargas</h2>
+    <ul class="list" id="ultimas"></ul>
+  </div>
+</section>
+
+<!-- PAGOS (admin) -->
+<section id="v-pagos" class="hide">
+  <div class="card">
+    <div class="seg" id="pagoPer">
+      <button data-p="dia">Pago del día</button>
+      <button data-p="semana" class="on">Pago de la semana</button>
+    </div>
+    <h3 id="pagoRango"></h3>
+    <ul class="list" id="pagosList"></ul>
+  </div>
+  <div class="card hide" id="liqCard">
+    <h2 id="liq-title">Liquidación</h2>
+    <div id="liqLines"></div>
+    <div id="advBox">
+      <label>Descontar de adelantos (saldo <span id="advSaldo"></span>)</label>
+      <div class="row">
+        <input id="advDesc" inputmode="numeric">
+        <div class="seg" style="flex:0 0 auto"><button id="advTodo">Todo</button><button id="advNada">Nada</button></div>
+      </div>
+    </div>
+    <div class="line tot"><span>Total a cobrar</span><span id="liqNeto"></span></div>
+    <h3>Mensaje de WhatsApp</h3>
+    <pre class="msg" id="waMsg"></pre>
+    <p class="muted hide" id="sinTel">Este trabajador no tiene teléfono cargado. Agregalo en Equipo.</p>
+    <button class="btn wa" id="waBtn">Registrar pago y enviar por WhatsApp</button>
+  </div>
+  <div class="card">
+    <h2>Cuenta corriente de adelantos</h2>
+    <ul class="list" id="ctaList"></ul>
+  </div>
+  <div class="card">
+    <h2>Pagos enviados</h2>
+    <p class="muted" style="margin-top:-6px">El trabajador confirma desde el enlace del mensaje y queda registrado con fecha y hora.</p>
+    <ul class="list" id="histList"></ul>
+    <button class="btn ghost" id="histReload">Actualizar</button>
+  </div>
+</section>
+
+<!-- MIS PAGOS (trabajador) -->
+<section id="v-mios" class="hide">
+  <div class="card">
+    <h2>Mi cuenta</h2>
+    <div class="kpis" id="mioKpis"></div>
+  </div>
+  <div class="card">
+    <h2>Mis jornadas sin cobrar</h2>
+    <ul class="list" id="mioJor"></ul>
+  </div>
+  <div class="card">
+    <h2>Mis pagos</h2>
+    <ul class="list" id="mioPagos"></ul>
+  </div>
+</section>
+
+<!-- INFORMES -->
+<section id="v-inf" class="hide">
+  <div class="card">
+    <div class="seg" id="perSeg">
+      <button data-p="dia">Día</button>
+      <button data-p="semana" class="on">Semana</button>
+      <button data-p="mes">Mes</button>
+      <button data-p="anio">Año</button>
+    </div>
+    <div class="row">
+      <button class="btn" id="verDoc">Ver documento</button>
+      <button class="btn ghost" id="pdf">Descargar PDF</button>
+    </div>
+    <button class="btn ghost" id="csv" style="margin-top:8px">Descargar Excel</button>
+  </div>
+  <div class="card"><h2>Resumen</h2><div class="kpis" id="kpis"></div></div>
+  <div class="card">
+    <h2>Comparar trabajadores</h2>
+    <div class="seg" id="cmpSeg">
+      <button data-c="horas" class="on">Horas</button>
+      <button data-c="sueldo">Sueldo</button>
+      <button data-c="ext">Extras</button>
+      <button data-c="adel" data-rol="admin">Adelantos</button>
+    </div>
+    <div id="cmpBars" style="margin-top:10px"></div>
+    <div class="scroll" style="margin-top:10px"><table class="t" id="cmpTable"></table></div>
+  </div>
+  <div class="card"><h2>Por obra</h2><ul class="list" id="porObra"></ul></div>
+  <div class="card" data-rol="admin"><h2>Cobros por tipo de trabajo</h2><div id="porTipo"></div></div>
+  <div class="card"><h2>Gastos por categoría</h2><div id="porCat"></div></div>
+</section>
+
+<!-- EQUIPO (admin) -->
+<section id="v-eq" class="hide">
+  <div class="card">
+    <h2>Trabajadores</h2>
+    <ul class="list" id="trabList"></ul>
+    <button class="btn ghost" id="trabNuevo">+ Agregar trabajador</button>
+  </div>
+  <div class="card hide" id="trabEdit">
+    <h2 id="te-title">Trabajador</h2>
+    <label>Nombre</label><input id="te-nombre">
+    <label>WhatsApp (con código de país, sin espacios)</label><input id="te-tel" inputmode="tel" placeholder="5493411234567">
+    <div class="row">
+      <div><label>Precio jornada ($)</label><input id="te-precio" inputmode="numeric"></div>
+      <div><label>Horas jornada</label><input id="te-horas" inputmode="decimal"></div>
+    </div>
+    <p class="muted" id="te-hora"></p>
+    <label>Se le paga</label>
+    <div class="seg" id="te-frec"><button data-f="dia">Por día</button><button data-f="semana">Por semana</button></div>
+    <label>Horas extras</label>
+    <div class="seg" id="te-modo">
+      <button data-m="igual">Mismo valor</button>
+      <button data-m="porcentaje">% recargo</button>
+      <button data-m="fijo">Precio fijo</button>
+    </div>
+    <div id="te-pctbox"><label>Recargo (%)</label><input id="te-pct" inputmode="numeric"></div>
+    <div id="te-fijobox"><label>Precio por hora extra ($)</label><input id="te-fijo" inputmode="numeric"></div>
+    <p class="muted" id="te-extra"></p>
+    <label>Recargo sobre la hora extra según el día (0 = no aplica)</label>
+    <div class="grid2">
+      <div><label>Sábado (%)</label><input id="te-sab" inputmode="numeric"></div>
+      <div><label>Domingo y feriado (%)</label><input id="te-dom" inputmode="numeric"></div>
+    </div>
+    <p class="muted" id="te-dias"></p>
+    <label class="check"><input type="checkbox" id="te-activo"> Activo</label>
+    <button class="btn" id="te-save">Guardar</button>
+    <button class="btn ghost" id="te-cancel">Cancelar</button>
+  </div>
+  <div class="card">
+    <h2>Obras</h2>
+    <ul class="list" id="obraList"></ul>
+    <div class="inline-add"><input id="obraNew" placeholder="Nombre de la obra"><button id="obraOk">Agregar</button></div>
+  </div>
+  <div class="card">
+    <h2>Usuarios y roles</h2>
+    <p class="muted" style="margin-top:-6px">Cada persona crea su cuenta desde la app. Acá le asignás el rol y, si es trabajador, su ficha.</p>
+    <ul class="list" id="userList"></ul>
+  </div>
+  <div class="card">
+    <h2>Categorías de gasto</h2>
+    <div class="chips" id="catList"></div>
+    <p class="muted">Tocá una para desactivarla. Se agregan desde Cargar → Gasto.</p>
+  </div>
+  <div class="card">
+    <h2>Tipos de trabajo</h2>
+    <div class="chips" id="tipoList"></div>
+    <p class="muted">Tocá uno para desactivarlo. Se agregan desde Cargar → Cobro.</p>
+  </div>
+</section>
+</main>
+
+<nav id="nav">
+  <button data-v="cargar" class="on"><span>＋</span>Cargar</button>
+  <button data-v="pagos" data-rol="admin"><span>💬</span>Pagos</button>
+  <button data-v="mios" data-rol="trabajador"><span>💵</span>Mis pagos</button>
+  <button data-v="inf" data-rol="admin encargado"><span>📊</span>Informes</button>
+  <button data-v="eq" data-rol="admin"><span>👷</span>Equipo</button>
+</nav>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="doc">
+  <div class="bar-top"><button id="docClose">Cerrar</button><button class="pri" id="docPdf">Descargar PDF</button></div>
+  <div class="paper" id="paper"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
+<script>
+/* ===================== Configuración ===================== */
+const SUPA_URL = 'https://whbrcdualxpvnblzexue.supabase.co';
+const SUPA_KEY = 'sb_publishable_DgCmBH-xAeoLtRusQ3r3dw_zFp9gU9m';
+const FIRMA = 'Instalaciones de aberturas';
+
+/* ===================== Utilidades ===================== */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const fmt = n => (n<0?"-$":"$") + Math.abs(Math.round(n||0)).toLocaleString("es-AR");
+const iso = d => { const z=new Date(d.getTime()-d.getTimezoneOffset()*6e4); return z.toISOString().slice(0,10); };
+const hoyF = () => iso(new Date());
+const fd = f => f ? String(f).slice(0,10).split('-').reverse().join('/') : '';
+const fdh = t => { if(!t) return ''; const d=new Date(t); return fd(iso(d))+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); };
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num = v => { const s=String(v??'').trim(); if(!s) return 0; const t = s.includes(',') ? s.replace(/\./g,'').replace(',','.') : (/^\d{1,3}(\.\d{3})+$/.test(s) ? s.replace(/\./g,'') : s); return parseFloat(t)||0; };
+const uidLocal = () => Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const codigo = () => Array.from(crypto.getRandomValues(new Uint8Array(8))).map(b=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b%32]).join('');
+const store = {
+  get(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } },
+  set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+let toastT; function toast(t){ const el=$('#toast'); el.textContent=t; el.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),2600); }
+function show(id){ ['s-confirmar','s-login','s-app'].forEach(s=>$('#'+s).classList.toggle('hide',s!==id)); }
+function lunes(){ const d=new Date(); d.setDate(d.getDate()-((d.getDay()+6)%7)); return iso(d); }
+const APP_URL = location.href.split(/[?#]/)[0];
+
+/* ===================== Cliente ===================== */
+let sb = null;
+try { sb = window.supabase.createClient(SUPA_URL, SUPA_KEY); } catch(e) { console.error(e); }
+
+/* ===================== Estado ===================== */
+const TABLAS = ['obras','trabajadores','tipos_trabajo','categorias_gasto','feriados','jornadas','gastos','adelantos','cobros','pagos','quienes'];
+let me = null;            // perfil
+let T = {};               // tablas en memoria
+TABLAS.forEach(t=>T[t]=[]); T.perfiles=[];
+let cola = store.get('go-cola', []);
+const esAdmin = () => me?.rol==='admin';
+const esEnc = () => me?.rol==='encargado';
+const esTrab = () => me?.rol==='trabajador';
+
+/* ===================== Confirmación de pago ===================== */
+async function pantallaConfirmar(cod){
+  show('s-confirmar');
+  if(!sb){ $('#cf-title').textContent='No se pudo conectar'; $('#cf-body').textContent='Probá de nuevo cuando tengas internet.'; return; }
+  const { data, error } = await sb.rpc('confirmar_pago', { p_codigo: cod });
+  if(error || !data || !data.length){ $('#cf-title').textContent='No encontramos ese pago'; $('#cf-body').textContent='Revisá que el enlace esté completo o avisale a quien te pagó.'; return; }
+  const p=data[0];
+  $('#cf-title').textContent='✔ Pago confirmado';
+  $('#cf-body').innerHTML=`${esc(p.trabajador)}, quedó registrado que recibiste <b>${fmt(p.neto)}</b>.<br>Fecha: ${esc(fdh(p.confirmado_en))}`;
+}
+
+/* ===================== Login ===================== */
+let lgModo='in';
+$$('#lgSeg button').forEach(b=>b.onclick=()=>{ lgModo=b.dataset.m; $$('#lgSeg button').forEach(x=>x.classList.toggle('on',x===b)); $('#lg-nombreBox').classList.toggle('hide',lgModo!=='up'); $('#lg-go').textContent=lgModo==='up'?'Crear cuenta':'Entrar'; $('#lg-err').textContent=''; });
+$('#lg-go').onclick=async()=>{
+  const email=$('#lg-email').value.trim(), password=$('#lg-pass').value;
+  $('#lg-err').textContent='';
+  if(!email||password.length<6) return $('#lg-err').textContent='Poné tu correo y una contraseña de al menos 6 letras o números.';
+  if(!sb) return $('#lg-err').textContent='No hay conexión con el servidor.';
+  $('#lg-go').disabled=true;
+  try{
+    if(lgModo==='up'){
+      const nombre=$('#lg-nombre').value.trim();
+      if(!nombre) return $('#lg-err').textContent='Poné tu nombre.';
+      const {data,error}=await sb.auth.signUp({email,password,options:{data:{nombre}, emailRedirectTo: APP_URL}});
+      if(error) throw error;
+      if(!data.session){ $('#lg-err').style.color='var(--ok)'; $('#lg-err').textContent='Listo. Te mandamos un correo: abrilo y tocá el enlace para activar la cuenta. Después entrá acá.'; return; }
+    } else {
+      const {error}=await sb.auth.signInWithPassword({email,password});
+      if(error) throw error;
+    }
+    await iniciar();
+  }catch(e){ $('#lg-err').style.color=''; $('#lg-err').textContent = /Invalid login/i.test(e.message)?'Correo o contraseña incorrectos.':/confirm/i.test(e.message)?'Primero activá la cuenta desde el correo que te llegó.':'Error: '+e.message; }
+  finally{ $('#lg-go').disabled=false; }
+};
+$('#who').onclick=async()=>{ if(!confirm('¿Cerrar sesión?')) return; if(cola.length && !confirm('Hay cargas sin subir. Si salís ahora se pierden. ¿Salir igual?')) return; await sb?.auth.signOut(); store.del('go-cache'); store.del('go-cola'); cola=[]; me=null; show('s-login'); };
+
+/* ===================== Carga de datos ===================== */
+async function fetchAll(tabla){
+  let out=[], from=0;
+  for(;;){
+    const {data,error}=await sb.from(tabla).select('*').range(from,from+999);
+    if(error) throw error;
+    out=out.concat(data||[]); if(!data || data.length<1000) break; from+=1000;
+  }
+  return out;
+}
+async function cargarDatos(){
+  const cache=store.get('go-cache',null);
+  if(cache && (!me || cache.me?.id===me.id)){ T=Object.assign(T,cache.T); if(!me) me=cache.me; }
+  if(!navigator.onLine || !sb) return;
+  try{
+    const { data:{ user } } = await sb.auth.getUser();
+    if(!user) return;
+    const { data:perf, error:pe } = await sb.from('perfiles').select('*').eq('id',user.id).maybeSingle();
+    if(pe) throw pe;
+    me = perf || { id:user.id, nombre:user.email, rol:'trabajador' };
+    const lista = TABLAS.concat(esAdmin()?['perfiles']:[]);
+    const res = await Promise.all(lista.map(t=>fetchAll(t).catch(()=>T[t]||[])));
+    lista.forEach((t,i)=>T[t]=res[i]);
+    store.set('go-cache',{me,T,en:Date.now()});
+  }catch(e){ console.warn('sin datos del servidor',e); }
+}
+async function iniciar(){
+  show('s-app');
+  await cargarDatos();
+  if(!me){ show('s-login'); return; }
+  aplicarRol(); llenarSelects(); loadDraft(); render(); sync();
+}
+function aplicarRol(){
+  $('#who').textContent = `${me.nombre} · ${{admin:'Admin',encargado:'Encargado',trabajador:'Trabajador'}[me.rol]}`;
+  $$('[data-rol]').forEach(el=>el.classList.toggle('hide', !el.dataset.rol.split(' ').includes(me.rol)));
+  const sinFicha = esTrab() && !me.trabajador_id;
+  $('#sinFicha').classList.toggle('hide',!sinFicha);
+  $('#cargaCard').classList.toggle('hide',sinFicha);
+  $('#j-trabBox').classList.toggle('hide',esTrab());
+}
+$$('#nav button').forEach(b=>b.onclick=()=>{
+  $$('#nav button').forEach(x=>x.classList.toggle('on',x===b));
+  ['cargar','pagos','mios','inf','eq'].forEach(v=>$('#v-'+v).classList.toggle('hide',v!==b.dataset.v));
+  render(); scrollTo(0,0);
+});
+
+/* ===================== Cola sin conexión ===================== */
+function guardarCola(){ if(!store.set('go-cola',cola)) toast('El celular está sin espacio: subí las cargas pendientes'); }
+function pintarCola(){
+  const n=cola.length; $('#colaBox').classList.toggle('hide',!n);
+  $('#colaBox').textContent = n ? `${n} carga${n>1?'s':''} esperando señal para subir.` : '';
+}
+let sincronizando=false;
+async function sync(){
+  pintarCola();
+  if(sincronizando || !cola.length || !navigator.onLine || !sb) return;
+  sincronizando=true;
+  let subidas=0;
+  try{
+    while(cola.length){
+      const op=cola[0];
+      const fila={...op.fila};
+      if(op.foto){
+        const path=`${me.id}/${fila.id_local}.jpg`;
+        const blob=await (await fetch(op.foto)).blob();
+        const {error:ue}=await sb.storage.from('comprobantes').upload(path,blob,{contentType:'image/jpeg',upsert:true});
+        if(ue) throw ue;
+        fila.comprobante=path;
+      }
+      const {data,error}=await sb.from(op.tabla).insert(fila).select().single();
+      if(error && error.code!=='23505') throw error;
+      const i=T[op.tabla].findIndex(r=>r.id_local===fila.id_local);
+      if(data){ if(i>=0) T[op.tabla][i]=data; else T[op.tabla].push(data); }
+      cola.shift(); guardarCola(); subidas++;
+    }
+  }catch(e){ console.warn('sync',e); if(e && e.code && e.code!=='23505' && !/fetch|network/i.test(e.message||'')) toast('No se pudo subir una carga: '+(e.message||e)); }
+  finally{
+    sincronizando=false; pintarCola();
+    if(subidas){ store.set('go-cache',{me,T,en:Date.now()}); toast(`${subidas} carga${subidas>1?'s':''} subida${subidas>1?'s':''}`); render(); }
+  }
+}
+function netState(){ const el=$('#net'); if(navigator.onLine){el.textContent='En línea';el.classList.remove('off'); sync();} else {el.textContent='Sin conexión';el.classList.add('off');} }
+addEventListener('online',netState); addEventListener('offline',netState);
+setInterval(sync,30000);
+
+/* ===================== Cálculos ===================== */
+const byId = (t,id) => T[t].find(r=>r.id===id);
+const obraN = id => byId('obras',id)?.nombre || 'General';
+const trabN = id => byId('trabajadores',id)?.nombre || '—';
+const quien = id => { const q=byId('quienes',id); return q ? `${q.nombre} · ${{admin:'Admin',encargado:'Encargado',trabajador:'Trabajador'}[q.rol]}` : (id===me?.id? me.nombre : ''); };
+const valorHora = t => t.precio_jornada / (t.horas_jornada||8);
+const valorExtra = t => t.extra_modo==='igual' ? valorHora(t) : t.extra_modo==='porcentaje' ? valorHora(t)*(1+t.extra_porcentaje/100) : +t.extra_fijo;
+const recDia = (t,dia) => dia==='sabado' ? +t.recargo_sabado : (dia==='domingo'||dia==='feriado') ? +t.recargo_domingo : 0;
+const valorExtraDia = (t,dia) => valorExtra(t)*(1+recDia(t,dia)/100);
+function tipoDia(f,fer){ if(fer || T.feriados.some(x=>x.fecha===f)) return 'feriado'; const w=new Date(f+'T12:00').getDay(); return w===6?'sabado':w===0?'domingo':'habil'; }
+const DIA_TXT={habil:'día hábil',sabado:'sábado',domingo:'domingo',feriado:'feriado'};
+function jorTotal(j){ if(j.total!=null) return +j.total; const t=byId('trabajadores',j.trabajador_id); return t ? +t.precio_jornada + (+j.horas_extra||0)*valorExtraDia(t,j.dia||tipoDia(j.fecha)) : 0; }
+function jorValorExtra(j){ if(j.valor_hora_extra!=null) return +j.valor_hora_extra; const t=byId('trabajadores',j.trabajador_id); return t?valorExtraDia(t,j.dia||tipoDia(j.fecha)):0; }
+function jorPrecio(j){ if(j.precio_jornada!=null) return +j.precio_jornada; return +(byId('trabajadores',j.trabajador_id)?.precio_jornada||0); }
+const saldoAdel = tid => T.adelantos.filter(r=>r.trabajador_id===tid).reduce((a,r)=>a+ +r.monto,0) - T.pagos.filter(r=>r.trabajador_id===tid).reduce((a,r)=>a+ +r.descuento_adelanto,0);
+const aprobado = r => r.estado!=='rechazado';
+
+/* ===================== CARGAR ===================== */
+let tipo='gasto', catId=null, cmodo='m2', tipoTrabId=null;
+const catsAct = () => T.categorias_gasto.filter(c=>c.activa!==false).sort((a,b)=>a.nombre.localeCompare(b.nombre));
+const tiposAct = () => T.tipos_trabajo.filter(c=>c.activo!==false);
+function llenarSelects(){
+  const obrasAct=T.obras.filter(o=>o.activa!==false);
+  const oo=obrasAct.map(o=>`<option value="${o.id}">${esc(o.nombre)}</option>`).join('');
+  const keep={}; ['g-obra','j-obra','c-obra','j-trab','a-trab'].forEach(f=>keep[f]=$('#'+f).value);
+  $('#g-obra').innerHTML = oo + '<option value="">General (sin obra)</option>';
+  $('#j-obra').innerHTML = oo || '<option value="">(Cargá una obra en Equipo)</option>';
+  $('#c-obra').innerHTML = oo || '<option value="">(Cargá una obra en Equipo)</option>';
+  const tt=T.trabajadores.filter(t=>t.activo!==false).map(t=>`<option value="${t.id}">${esc(t.nombre)}</option>`).join('');
+  $('#j-trab').innerHTML=tt; $('#a-trab').innerHTML=tt;
+  Object.entries(keep).forEach(([f,v])=>{ if(v && [...$('#'+f).options].some(o=>o.value===v)) $('#'+f).value=v; });
+  if(!$('#g-fecha').value) $('#g-fecha').value=hoyF();
+  if(!$('#j-fecha').value) $('#j-fecha').value=hoyF();
+  renderCats(); renderTipos(); calcForm();
+}
+function renderCats(){
+  const cs=catsAct(); if(!cs.some(c=>c.id===catId)) catId=cs[0]?.id||null;
+  $('#g-cat').innerHTML = cs.map(c=>`<button data-c="${c.id}" class="${c.id===catId?'on':''}">${esc(c.nombre)}</button>`).join('') + (esAdmin()?'<button class="add" id="catPlus">+ Nueva</button>':'');
+  $$('#g-cat button[data-c]').forEach(b=>b.onclick=()=>{catId=b.dataset.c; renderCats(); saveDraft();});
+  $('#catPlus') && ($('#catPlus').onclick=()=>{ $('#catAdd').classList.toggle('hide'); $('#catNew').focus(); });
+  $('#catList').innerHTML = T.categorias_gasto.map(c=>`<button data-c="${c.id}" class="${c.activa!==false?'on':''}">${esc(c.nombre)}</button>`).join('');
+  $$('#catList button').forEach(b=>b.onclick=()=>toggleActivo('categorias_gasto',b.dataset.c,'activa'));
+}
+function renderTipos(){
+  const ts=tiposAct(); if(!ts.some(c=>c.id===tipoTrabId)) tipoTrabId=ts[0]?.id||null;
+  $('#c-tipos').innerHTML = ts.map(c=>`<button data-c="${c.id}" class="${c.id===tipoTrabId?'on':''}">${esc(c.nombre)}</button>`).join('') + '<button class="add" id="tipoPlus">+ Nuevo</button>';
+  $$('#c-tipos button[data-c]').forEach(b=>b.onclick=()=>{tipoTrabId=b.dataset.c; renderTipos();});
+  $('#tipoPlus').onclick=()=>{ $('#tipoAdd').classList.toggle('hide'); $('#tipoNew').focus(); };
+  $('#tipoList').innerHTML = T.tipos_trabajo.map(c=>`<button data-c="${c.id}" class="${c.activo!==false?'on':''}">${esc(c.nombre)}</button>`).join('');
+  $$('#tipoList button').forEach(b=>b.onclick=()=>toggleActivo('tipos_trabajo',b.dataset.c,'activo'));
+}
+async function online(){ if(!navigator.onLine||!sb){ toast('Necesitás conexión para esto'); return false; } return true; }
+async function toggleActivo(tabla,id,campo){
+  if(!await online()) return;
+  const r=byId(tabla,id); const v=!(r[campo]!==false);
+  const {error}=await sb.from(tabla).update({[campo]:v}).eq('id',id);
+  if(error) return toast('Error: '+error.message);
+  r[campo]=v; llenarSelects(); toast(v?'Activado':'Desactivado');
+}
+async function agregarNombre(tabla,input,box,onOk){
+  const n=$(input).value.trim(); if(!n) return;
+  if(!await online()) return;
+  const ya=T[tabla].find(c=>c.nombre.toLowerCase()===n.toLowerCase());
+  if(ya){ onOk(ya.id); $(input).value=''; $(box).classList.add('hide'); return; }
+  const {data,error}=await sb.from(tabla).insert({nombre:n}).select().single();
+  if(error) return toast('Error: '+error.message);
+  T[tabla].push(data); onOk(data.id); $(input).value=''; $(box).classList.add('hide'); toast(`"${n}" agregado`);
+}
+$('#catOk').onclick=()=>agregarNombre('categorias_gasto','#catNew','#catAdd',id=>{catId=id; renderCats();});
+$('#tipoOk').onclick=()=>agregarNombre('tipos_trabajo','#tipoNew','#tipoAdd',id=>{tipoTrabId=id; renderTipos();});
+
+$$('#tipoSeg button').forEach(b=>b.onclick=()=>{
+  tipo=b.dataset.t; $$('#tipoSeg button').forEach(x=>x.classList.toggle('on',x===b));
+  ['gasto','jornada','adelanto','cobro'].forEach(t=>$('#f-'+t).classList.toggle('hide',t!==tipo)); calcForm(); saveDraft();
+});
+$$('#c-modo button').forEach(b=>b.onclick=()=>{
+  cmodo=b.dataset.m; $$('#c-modo button').forEach(x=>x.classList.toggle('on',x===b));
+  $('#c-m2box').classList.toggle('hide',cmodo!=='m2'); $('#c-hbox').classList.toggle('hide',cmodo!=='hora'); $('#c-totbox').classList.toggle('hide',cmodo!=='total'); calcForm();
+});
+const montoCobro = () => cmodo==='m2' ? num($('#c-m2').value)*num($('#c-pm2').value) : cmodo==='hora' ? num($('#c-horas').value)*num($('#c-ph').value) : num($('#c-total').value);
+function jTrabId(){ return esTrab() ? me.trabajador_id : $('#j-trab').value; }
+function calcForm(){
+  const t=byId('trabajadores',jTrabId());
+  if(t){
+    const e=num($('#j-extra').value), f=$('#j-fecha').value||hoyF();
+    const auto=T.feriados.some(x=>x.fecha===f);
+    const dia=tipoDia(f,$('#j-fer').checked), ve=valorExtraDia(t,dia), rc=recDia(t,dia);
+    $('#j-dia').textContent=`Día: ${DIA_TXT[dia]}${auto?' (feriado nacional)':''}${rc?` · hora extra con ${rc}% más`:''}`;
+    $('#j-calc').textContent = esTrab() ? '' : `Jornada ${fmt(t.precio_jornada)} (${fmt(valorHora(t))}/h)` + (e?` + ${e} h extra × ${fmt(ve)} = ${fmt(+t.precio_jornada+e*ve)}`:'');
+  } else { $('#j-dia').textContent=''; $('#j-calc').textContent=''; }
+  const ta=byId('trabajadores',$('#a-trab').value);
+  if(ta){ const s=saldoAdel(ta.id), m=num($('#a-monto').value); $('#a-saldo').textContent=`Saldo de adelantos de ${ta.nombre}: ${fmt(s)}`+(m?` → queda en ${fmt(s+m)}`:''); }
+  const cm=montoCobro(); $('#c-calc').textContent = cmodo!=='total' && cm ? `Total: ${fmt(cm)}` : '';
+}
+$('#j-fer').addEventListener('change',calcForm);
+$('#j-fecha').addEventListener('change',()=>{$('#j-fer').checked=false; calcForm();});
+const FIELDS=['g-monto','g-obra','g-fecha','g-nota','j-trab','j-obra','j-fecha','j-extra','a-trab','a-monto','a-nota','c-obra','c-m2','c-pm2','c-horas','c-ph','c-total'];
+const TEXTF=['g-monto','g-nota','j-extra','a-monto','a-nota','c-m2','c-pm2','c-horas','c-ph','c-total'];
+function saveDraft(){
+  const d={tipo,catId,cmodo,tipoTrabId}; let any=false;
+  FIELDS.forEach(f=>{ d[f]=$('#'+f).value; if(TEXTF.includes(f)&&d[f]) any=true; });
+  if(any) store.set('go-draft',d); else store.del('go-draft');
+}
+function loadDraft(){
+  const d=store.get('go-draft',null); if(!d) return;
+  catId=d.catId||catId; tipoTrabId=d.tipoTrabId||tipoTrabId; renderCats(); renderTipos();
+  FIELDS.forEach(f=>{ if(d[f]) $('#'+f).value=d[f]; });
+  const tb=$(`#tipoSeg button[data-t="${d.tipo}"]`); if(tb && !tb.classList.contains('hide')) tb.click();
+  $(`#c-modo button[data-m="${d.cmodo||'m2'}"]`)?.click();
+  $('#draftBox').classList.remove('hide');
+}
+$('#draftDiscard').onclick=e=>{e.preventDefault(); store.del('go-draft'); TEXTF.forEach(f=>$('#'+f).value=''); $('#draftBox').classList.add('hide'); calcForm();};
+FIELDS.forEach(f=>$('#'+f).addEventListener('input',()=>{calcForm(); saveDraft();}));
+
+function comprimir(file){
+  return new Promise((res,rej)=>{
+    const img=new Image(), url=URL.createObjectURL(file);
+    img.onload=()=>{ const m=1280, k=Math.min(1,m/Math.max(img.width,img.height)); const c=document.createElement('canvas'); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k); c.getContext('2d').drawImage(img,0,0,c.width,c.height); URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg',0.6)); };
+    img.onerror=rej; img.src=url;
+  });
+}
+$('#guardar').onclick=async()=>{
+  const id_local=uidLocal(); let tabla, fila, foto=null;
+  if(tipo==='gasto'){
+    const m=num($('#g-monto').value); if(!m) return toast('Poné el monto'); if(!catId) return toast('Elegí una categoría');
+    tabla='gastos'; fila={id_local,obra_id:$('#g-obra').value||null,categoria_id:catId,monto:m,fecha:$('#g-fecha').value||hoyF(),nota:$('#g-nota').value||null,trabajador_id:esTrab()?me.trabajador_id:null};
+    if($('#g-foto').files[0]){ try{ foto=await comprimir($('#g-foto').files[0]); }catch(e){ toast('No se pudo leer la foto'); } }
+  }
+  if(tipo==='jornada'){
+    const tid=jTrabId(); if(!tid) return toast('Elegí el trabajador'); if(!$('#j-obra').value) return toast('Elegí la obra');
+    const f=$('#j-fecha').value||hoyF();
+    tabla='jornadas'; fila={id_local,trabajador_id:tid,obra_id:$('#j-obra').value,fecha:f,horas_extra:num($('#j-extra').value)};
+    if($('#j-fer').checked) fila.dia='feriado';
+    if(T.jornadas.some(j=>j.trabajador_id===tid&&j.fecha===f&&aprobado(j)) && !confirm(`${trabN(tid)} ya tiene una jornada el ${fd(f)}. ¿Cargar otra igual?`)) return;
+  }
+  if(tipo==='adelanto'){
+    const m=num($('#a-monto').value); if(!m) return toast('Poné el monto');
+    tabla='adelantos'; fila={id_local,trabajador_id:$('#a-trab').value,monto:m,fecha:hoyF(),motivo:$('#a-nota').value||null};
+  }
+  if(tipo==='cobro'){
+    const m=montoCobro(); if(!m) return toast('Completá el cobro'); if(!$('#c-obra').value) return toast('Elegí la obra');
+    tabla='cobros'; fila={id_local,obra_id:$('#c-obra').value,tipo_trabajo_id:tipoTrabId,forma:cmodo,monto:m,fecha:hoyF(),
+      cantidad: cmodo==='m2'?num($('#c-m2').value):cmodo==='hora'?num($('#c-horas').value):null,
+      precio_unitario: cmodo==='m2'?num($('#c-pm2').value):cmodo==='hora'?num($('#c-ph').value):null};
+  }
+  // se muestra enseguida y se sube en segundo plano
+  const local={...fila,cargado_por:me.id,cargado_en:new Date().toISOString(),estado:esTrab()?'pendiente':'aprobado',_pend:true};
+  if(tabla==='jornadas') local.dia=fila.dia||tipoDia(fila.fecha);
+  T[tabla].push(local);
+  cola.push({tabla,fila,foto}); guardarCola();
+  store.del('go-draft'); $('#draftBox').classList.add('hide');
+  TEXTF.forEach(f=>$('#'+f).value=''); $('#g-foto').value=''; $('#j-fer').checked=false;
+  toast(navigator.onLine?'Guardado':'Guardado en el celular. Se sube cuando vuelva la señal');
+  render(); sync();
+};
+
+function describe(r,tabla){
+  if(tabla==='gastos') return `${byId('categorias_gasto',r.categoria_id)?.nombre||'Gasto'} · ${obraN(r.obra_id)}${r.nota?' · '+r.nota:''}`;
+  if(tabla==='jornadas') return `Jornada ${trabN(r.trabajador_id)} · ${obraN(r.obra_id)}${+r.horas_extra?` +${+r.horas_extra}h extra (${DIA_TXT[r.dia]||''})`:''}`;
+  if(tabla==='adelantos') return `Adelanto a ${trabN(r.trabajador_id)}${r.motivo?' · '+r.motivo:''}`;
+  if(tabla==='pagos') return `Pago a ${trabN(r.trabajador_id)}`;
+  const det=r.forma==='m2'?` (${+r.cantidad} m² x ${fmt(r.precio_unitario)})`:r.forma==='hora'?` (${+r.cantidad} h x ${fmt(r.precio_unitario)})`:'';
+  return `Cobro ${obraN(r.obra_id)}${r.tipo_trabajo_id?' · '+(byId('tipos_trabajo',r.tipo_trabajo_id)?.nombre||''):''}${det}`;
+}
+const montoReg = (r,tabla) => tabla==='jornadas'?jorTotal(r):tabla==='pagos'?(+r.bruto - +r.descuento_adelanto):+r.monto;
+function todos(){ return ['gastos','jornadas','adelantos','cobros','pagos'].flatMap(t=>T[t].map(r=>({r,t}))); }
+async function verFoto(path){
+  if(!await online()) return;
+  const {data,error}=await sb.storage.from('comprobantes').createSignedUrl(path,600);
+  if(error) return toast('No se pudo abrir la foto');
+  window.open(data.signedUrl,'_blank');
+}
+function renderUltimas(){
+  const xs=todos().filter(x=>x.t!=='pagos').sort((a,b)=>String(b.r.cargado_en).localeCompare(String(a.r.cargado_en))).slice(0,10);
+  $('#ultimas').innerHTML = xs.length ? xs.map(({r,t})=>`<li><span>${esc(describe(r,t))}<br><span class="muted">${fd(r.fecha)} · ${esc(quien(r.cargado_por))}${r.comprobante?` · <a href="#" data-foto="${esc(r.comprobante)}">📎 ver</a>`:''}${r._pend?' · <span class="tag warn">sin subir</span>':''}${r.estado==='pendiente'?' · <span class="tag warn">a aprobar</span>':''}${r.estado==='rechazado'?' · <span class="tag">rechazado</span>':''}</span></span><b>${(esTrab()&&t==='jornadas')?'':fmt(montoReg(r,t))}</b></li>`).join('') : '<li class="muted">Todavía no cargaste nada.</li>';
+  $$('[data-foto]').forEach(a=>a.onclick=e=>{e.preventDefault(); verFoto(a.dataset.foto);});
+}
+function renderPend(){
+  if(!esAdmin()){ $('#pendCard').classList.add('hide'); return; }
+  const xs=[...T.jornadas.map(r=>({r,t:'jornadas'})),...T.gastos.map(r=>({r,t:'gastos'}))].filter(x=>x.r.estado==='pendiente');
+  $('#pendCard').classList.toggle('hide',!xs.length);
+  $('#pendList').innerHTML=xs.map(({r,t})=>`<li style="align-items:flex-start"><span>${esc(describe(r,t))} · <b>${fmt(montoReg(r,t))}</b><br><span class="muted">${fd(r.fecha)} · ${esc(quien(r.cargado_por))}${r.comprobante?` · <a href="#" data-foto="${esc(r.comprobante)}">📎 ver</a>`:''}</span><br><button class="btn sm" data-ok="${t}:${r.id}">Aprobar</button> <button class="btn bad sm" data-no="${t}:${r.id}">Rechazar</button></span></li>`).join('');
+  $$('[data-ok],[data-no]').forEach(b=>b.onclick=async()=>{
+    if(!await online()) return;
+    const [t,id]=(b.dataset.ok||b.dataset.no).split(':'), estado=b.dataset.ok?'aprobado':'rechazado';
+    const {error}=await sb.from(t).update({estado}).eq('id',id);
+    if(error) return toast('Error: '+error.message);
+    byId(t,id).estado=estado; render(); toast(estado==='aprobado'?'Aprobado':'Rechazado');
+  });
+}
+
+/* ===================== PAGOS ===================== */
+let pper='semana', liqT=null, liqCod=codigo();
+$$('#pagoPer button').forEach(b=>b.onclick=()=>{pper=b.dataset.p; $$('#pagoPer button').forEach(x=>x.classList.toggle('on',x===b)); $('#liqCard').classList.add('hide'); renderPagos();});
+const rango = () => pper==='dia' ? [hoyF(),hoyF()] : [lunes(),hoyF()];
+function jornadasPend(tid){ const [d,h]=rango(); return T.jornadas.filter(r=>r.trabajador_id===tid&&r.estado==='aprobado'&&!r.pago_id&&!r._pend&&r.fecha>=d&&r.fecha<=h); }
+function liq(t){
+  const js=jornadasPend(t.id), dias=js.length, jor=js.reduce((a,r)=>a+jorPrecio(r),0);
+  const g={}; js.forEach(r=>{ const h=+r.horas_extra; if(!h) return; const k=(r.dia==='domingo'||r.dia==='feriado')?'domfer':(r.dia||'habil'); const v=jorValorExtra(r); const kk=k+'|'+v; g[kk]=g[kk]||{k,h:0,v}; g[kk].h+=h; });
+  const ext2=Object.values(g).sort((a,b)=>['habil','sabado','domfer'].indexOf(a.k)-['habil','sabado','domfer'].indexOf(b.k)).map(x=>({...x,txt:{habil:'día hábil',sabado:'sábado',domfer:'domingo/feriado'}[x.k],m:x.h*x.v}));
+  const extM=ext2.reduce((a,x)=>a+x.m,0), ext=ext2.reduce((a,x)=>a+x.h,0);
+  const precios=[...new Set(js.map(jorPrecio))];
+  return {js,dias,ext,ext2,jor,extM,bruto:jor+extM,precioTxt:precios.length===1?fmt(precios[0]):'varios precios'};
+}
+function renderPagos(){
+  if(!esAdmin()) return;
+  const [d,h]=rango();
+  $('#pagoRango').textContent = pper==='dia' ? `Hoy ${fd(h)}` : `Del ${fd(d)} al ${fd(h)}`;
+  const ts=T.trabajadores.filter(t=>t.activo!==false);
+  $('#pagosList').innerHTML=ts.length?ts.map(t=>{const l=liq(t), s=saldoAdel(t.id);
+    return `<li data-id="${t.id}" style="cursor:pointer"><span><b>${esc(t.nombre)}</b> <span class="tag">${t.frecuencia==='dia'?'Cobra por día':'Cobra por semana'}</span><br><span class="muted">${l.dias} días · ${l.ext} h extra${s>0?` · debe ${fmt(s)}`:''}</span></span><b>${l.dias?fmt(l.bruto):'<span class="muted">Sin pendientes</span>'}</b></li>`;}).join(''):'<li class="muted">Cargá los trabajadores en Equipo.</li>';
+  $$('#pagosList li[data-id]').forEach(li=>li.onclick=()=>openLiq(li.dataset.id));
+  $('#ctaList').innerHTML=ts.map(t=>{
+    const movs=[...T.adelantos.filter(r=>r.trabajador_id===t.id).map(r=>({f:r.fecha,txt:`${fd(r.fecha)} adelanto +${fmt(r.monto)}${r.motivo?' ('+esc(r.motivo)+')':''}`})),
+                ...T.pagos.filter(r=>r.trabajador_id===t.id&& +r.descuento_adelanto).map(r=>({f:String(r.cargado_en).slice(0,10),txt:`${fd(r.cargado_en)} descontado −${fmt(r.descuento_adelanto)}`}))].sort((a,b)=>a.f.localeCompare(b.f));
+    const s=saldoAdel(t.id);
+    return `<li style="align-items:flex-start"><span><b>${esc(t.nombre)}</b><br><span class="muted">${movs.length?movs.map(m=>m.txt).join('<br>'):'Sin movimientos'}</span></span><b class="${s>0?'neg':''}">${fmt(s)}</b></li>`;}).join('');
+  const ps=[...T.pagos].sort((a,b)=>String(b.cargado_en).localeCompare(String(a.cargado_en)));
+  $('#histList').innerHTML=ps.length?ps.map(p=>`<li style="align-items:flex-start"><span><b>${esc(trabN(p.trabajador_id))}</b> · ${fmt(+p.bruto - +p.descuento_adelanto)}<br><span class="muted">${fd(p.desde)} al ${fd(p.hasta)} · enviado ${fdh(p.cargado_en)}${p.estado==='confirmado'?`<br>Recibido confirmado el ${fdh(p.confirmado_en)}`:''}</span></span><span class="tag ${p.estado==='confirmado'?'ok':'warn'}">${p.estado==='confirmado'?'✔ Recibido':'Esperando'}</span></li>`).join(''):'<li class="muted">Todavía no hay pagos.</li>';
+}
+$('#histReload').onclick=async()=>{ if(!await online()) return; try{ T.pagos=await fetchAll('pagos'); renderPagos(); toast('Actualizado'); }catch(e){ toast('Error: '+e.message); } };
+function openLiq(tid){
+  liqT=byId('trabajadores',tid); const l=liq(liqT), s=saldoAdel(tid);
+  if(!l.dias){ toast('No hay jornadas aprobadas sin pagar en este período'); return; }
+  liqCod=codigo();
+  $('#liq-title').textContent='Liquidación de '+liqT.nombre;
+  $('#liqLines').innerHTML=`<div class="line"><span>Jornadas: ${l.dias} × ${l.precioTxt}</span><span>${fmt(l.jor)}</span></div>`+
+    l.ext2.map(x=>`<div class="line"><span>Horas extra ${x.txt}: ${x.h} h × ${fmt(x.v)}</span><span>${fmt(x.m)}</span></div>`).join('')+
+    `<div class="line" style="font-weight:600"><span>Subtotal</span><span>${fmt(l.bruto)}</span></div>`;
+  $('#advBox').classList.toggle('hide',s<=0);
+  $('#advSaldo').textContent=fmt(s);
+  $('#advDesc').value = s>0 ? Math.round(Math.min(s,l.bruto)) : 0;
+  $('#sinTel').classList.toggle('hide',!!liqT.telefono);
+  $('#liqCard').classList.remove('hide'); updLiq();
+  $('#liqCard').scrollIntoView({behavior:'smooth'});
+}
+function descVal(){ const l=liq(liqT), s=saldoAdel(liqT.id); return Math.max(0,Math.min(num($('#advDesc').value),s,l.bruto)); }
+function mensaje(){
+  const l=liq(liqT), d=descVal(), s=saldoAdel(liqT.id), [a,b]=rango();
+  const L='────────────────';
+  let m=`*LIQUIDACIÓN DE PAGO*\n${L}\n*Trabajador:* ${liqT.nombre}\n*Período:* ${a===b?fd(a):fd(a)+' al '+fd(b)}\n${L}\n`;
+  m+=`*Jornadas:* ${l.dias} × ${l.precioTxt} = ${fmt(l.jor)}\n`;
+  l.ext2.forEach(x=>{ m+=`*Horas extra (${x.txt}):* ${x.h} h × ${fmt(x.v)} = ${fmt(x.m)}\n`; });
+  m+=`*Subtotal:* ${fmt(l.bruto)}\n`;
+  if(d) m+=`*Descuento por adelantos:* −${fmt(d)}\n`;
+  m+=`${L}\n*TOTAL A COBRAR: ${fmt(l.bruto-d)}*\n${L}\n`;
+  if(s>0) m+=`Saldo de adelantos pendiente: ${fmt(s-d)}\n\n`;
+  m+=`Por favor, confirme la recepción del pago en este enlace:\n${APP_URL}?c=${liqCod}\n\n${me.nombre} · ${FIRMA}`;
+  return m;
+}
+function updLiq(){ const l=liq(liqT); $('#liqNeto').textContent=fmt(l.bruto-descVal()); $('#waMsg').textContent=mensaje(); }
+$('#advDesc').addEventListener('input',updLiq);
+$('#advTodo').onclick=()=>{ $('#advDesc').value=Math.round(Math.min(saldoAdel(liqT.id),liq(liqT).bruto)); updLiq(); };
+$('#advNada').onclick=()=>{ $('#advDesc').value=0; updLiq(); };
+$('#waBtn').onclick=async()=>{
+  if(!await online()) return;
+  const l=liq(liqT), d=descVal(), [a,b]=rango(), msg=mensaje();
+  // abrir la ventana antes de esperar al servidor (si no, el celular la bloquea)
+  const w = liqT.telefono ? window.open('about:blank','_blank') : null;
+  $('#waBtn').disabled=true;
+  try{
+    const {data:p,error}=await sb.from('pagos').insert({trabajador_id:liqT.id,desde:a,hasta:b,bruto:Math.round(l.bruto*100)/100,descuento_adelanto:Math.round(d*100)/100,mensaje:msg,codigo:liqCod}).select().single();
+    if(error) throw error;
+    const ids=l.js.map(j=>j.id);
+    const {error:e2}=await sb.from('jornadas').update({pago_id:p.id}).in('id',ids);
+    if(e2) throw e2;
+    T.pagos.push(p); l.js.forEach(j=>j.pago_id=p.id); store.set('go-cache',{me,T,en:Date.now()});
+    const url='https://wa.me/'+String(liqT.telefono||'').replace(/\D/g,'')+'?text='+encodeURIComponent(msg);
+    if(w) w.location.href=url; else if(liqT.telefono) location.href=url;
+    $('#liqCard').classList.add('hide'); renderPagos(); toast('Pago registrado. Esperando confirmación');
+  }catch(e){ if(w) w.close(); toast('No se pudo registrar: '+e.message); }
+  finally{ $('#waBtn').disabled=false; }
+};
+
+/* ===================== MIS PAGOS (trabajador) ===================== */
+function renderMios(){
+  if(!esTrab()||!me.trabajador_id) return;
+  const tid=me.trabajador_id;
+  const sin=T.jornadas.filter(j=>j.trabajador_id===tid&&!j.pago_id&&j.estado!=='rechazado').sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  const aCobrar=sin.filter(j=>j.estado==='aprobado').reduce((a,j)=>a+jorTotal(j),0);
+  $('#mioKpis').innerHTML=`<div class="kpi">Por cobrar<b>${fmt(aCobrar)}</b></div><div class="kpi">Debo de adelantos<b>${fmt(saldoAdel(tid))}</b></div>`;
+  $('#mioJor').innerHTML=sin.length?sin.map(j=>`<li><span>${fd(j.fecha)} · ${esc(obraN(j.obra_id))}${+j.horas_extra?` · +${+j.horas_extra} h extra`:''}<br><span class="muted">${j.estado==='pendiente'?'Esperando aprobación':'Aprobada'}</span></span><b>${j.estado==='aprobado'?fmt(jorTotal(j)):''}</b></li>`).join(''):'<li class="muted">No hay jornadas pendientes.</li>';
+  const ps=T.pagos.filter(p=>p.trabajador_id===tid).sort((a,b)=>String(b.cargado_en).localeCompare(String(a.cargado_en)));
+  $('#mioPagos').innerHTML=ps.length?ps.map(p=>`<li><span>${fd(p.desde)} al ${fd(p.hasta)}<br><span class="muted">${p.estado==='confirmado'?'Confirmaste el '+fdh(p.confirmado_en):'Sin confirmar'}</span></span><b>${fmt(+p.bruto - +p.descuento_adelanto)}</b></li>`).join(''):'<li class="muted">Todavía no hay pagos.</li>';
+}
+
+/* ===================== INFORMES ===================== */
+let per='semana', cmp='horas';
+$$('#perSeg button').forEach(b=>b.onclick=()=>{per=b.dataset.p; $$('#perSeg button').forEach(x=>x.classList.toggle('on',x===b)); renderInf();});
+$$('#cmpSeg button').forEach(b=>b.onclick=()=>{cmp=b.dataset.c; $$('#cmpSeg button').forEach(x=>x.classList.toggle('on',x===b)); renderInf();});
+const PER_TXT={dia:'hoy',semana:'últimos 7 días',mes:'últimos 30 días',anio:'último año'};
+function inPer(f){ if(!f) return false; const d=(new Date(hoyF())-new Date(String(f).slice(0,10)))/864e5; return d>=0 && (per==='dia'?d<1:per==='semana'?d<7:per==='mes'?d<30:d<365); }
+function stats(){
+  const J=T.jornadas.filter(r=>aprobado(r)&&r.estado!=='pendiente'&&inPer(r.fecha));
+  const G=T.gastos.filter(r=>aprobado(r)&&r.estado!=='pendiente'&&inPer(r.fecha));
+  const C=T.cobros.filter(r=>inPer(r.fecha));
+  const A=T.adelantos.filter(r=>inPer(r.fecha));
+  const gastos=G.reduce((a,r)=>a+ +r.monto,0), sueldos=J.reduce((a,r)=>a+jorTotal(r),0), cobros=C.reduce((a,r)=>a+ +r.monto,0);
+  const porObra=[...T.obras,{id:null,nombre:'General'}].map(o=>{
+    const c=C.filter(r=>r.obra_id===o.id).reduce((a,r)=>a+ +r.monto,0);
+    const g=G.filter(r=>(r.obra_id||null)===o.id).reduce((a,r)=>a+ +r.monto,0);
+    const s=J.filter(r=>r.obra_id===o.id).reduce((a,r)=>a+jorTotal(r),0);
+    return {nombre:o.nombre,c,g,s,gan:c-g-s};}).filter(o=>o.c||o.g||o.s);
+  const porCat=T.categorias_gasto.map(c=>[c.nombre,G.filter(r=>r.categoria_id===c.id).reduce((a,r)=>a+ +r.monto,0)]).filter(x=>x[1]).sort((a,b)=>b[1]-a[1]);
+  const porTipo=[...T.tipos_trabajo,{id:null,nombre:'Sin tipo'}].map(c=>[c.nombre,C.filter(r=>(r.tipo_trabajo_id||null)===c.id).reduce((a,r)=>a+ +r.monto,0)]).filter(x=>x[1]).sort((a,b)=>b[1]-a[1]);
+  const porTrab=T.trabajadores.map(t=>{
+    const js=J.filter(r=>r.trabajador_id===t.id);
+    const dias=js.length, ext=js.reduce((a,r)=>a+ +r.horas_extra,0), hn=dias*(+t.horas_jornada||8);
+    const sueldo=js.reduce((a,r)=>a+jorTotal(r),0), adel=A.filter(r=>r.trabajador_id===t.id).reduce((a,r)=>a+ +r.monto,0);
+    return {t,dias,ext,horas:hn+ext,sueldo,adel,ph:(hn+ext)?sueldo/(hn+ext):0,saldo:saldoAdel(t.id)};}).filter(x=>x.dias||x.adel||x.t.activo!==false);
+  return {J,G,C,A,gastos,sueldos,cobros,gan:cobros-gastos-sueldos,porObra,porCat,porTipo,porTrab};
+}
+function barras(arr,b2){ const mx=Math.max(1,...arr.map(x=>x[1])); return arr.map(([c,v,l])=>`<div class="barrow"><span>${esc(c)}</span><div class="bar ${b2?'b2':''}" style="width:${v/mx*100}%"></div><span style="text-align:right">${l??fmt(v)}</span></div>`).join(''); }
+function renderInf(){
+  if(esTrab()) return;
+  const S=stats(), adm=esAdmin();
+  $('#kpis').innerHTML=(adm?`<div class="kpi">Cobrado<b>${fmt(S.cobros)}</b></div>`:'')+`<div class="kpi">Sueldos<b>${fmt(S.sueldos)}</b></div><div class="kpi">Gastos<b>${fmt(S.gastos)}</b></div>`+(adm?`<div class="kpi">Ganancia<b class="${S.gan>=0?'pos':'neg'}">${fmt(S.gan)}</b></div>`:'');
+  const arr=[...S.porTrab].sort((a,b)=>b[cmp]-a[cmp]).map(x=>[x.t.nombre,x[cmp],(cmp==='horas'||cmp==='ext')?x[cmp]+' h':fmt(x[cmp])]);
+  $('#cmpBars').innerHTML=arr.length?barras(arr,cmp==='ext'||cmp==='adel'):'<p class="muted">Sin jornadas en este período.</p>';
+  $('#cmpTable').innerHTML=`<tr><th>Trabajador</th><th>Días</th><th>Horas</th><th>Hs extra</th><th>Sueldo</th><th>$/h real</th>${adm?'<th>Adelantos</th>':''}</tr>`+
+    S.porTrab.map(x=>`<tr><td>${esc(x.t.nombre)}</td><td>${x.dias}</td><td>${x.horas}</td><td>${x.ext}</td><td>${fmt(x.sueldo)}</td><td>${fmt(x.ph)}</td>${adm?`<td>${fmt(x.adel)}</td>`:''}</tr>`).join('');
+  $('#porObra').innerHTML=S.porObra.length?S.porObra.map(o=>`<li><span><b>${esc(o.nombre)}</b><br><span class="muted">${adm?`Cobro ${fmt(o.c)} · `:''}Sueldos ${fmt(o.s)} · Gastos ${fmt(o.g)}</span></span>${adm?`<b class="${o.gan>=0?'pos':'neg'}">${fmt(o.gan)}</b>`:`<b>${fmt(o.s+o.g)}</b>`}</li>`).join(''):'<li class="muted">Sin movimientos en este período.</li>';
+  $('#porTipo').innerHTML=S.porTipo.length?barras(S.porTipo,true):'<p class="muted">Sin cobros en este período.</p>';
+  $('#porCat').innerHTML=S.porCat.length?barras(S.porCat):'<p class="muted">Sin gastos en este período.</p>';
+}
+function buildDoc(){
+  const S=stats(), adm=esAdmin(), n=new Date();
+  const movs=[...S.J.map(r=>({r,t:'jornadas'})),...S.G.map(r=>({r,t:'gastos'})),...(adm?[...S.C.map(r=>({r,t:'cobros'})),...S.A.map(r=>({r,t:'adelantos'}))]:[])].sort((a,b)=>b.r.fecha.localeCompare(a.r.fecha));
+  $('#paper').innerHTML=`
+    <h1>Informe de gastos y pagos</h1>
+    <div class="sub">Período: ${PER_TXT[per]} · Generado el ${fdh(n)} por ${esc(me.nombre)}</div>
+    <div class="kp">${adm?`<div>Cobrado<b>${fmt(S.cobros)}</b></div>`:''}<div>Sueldos<b>${fmt(S.sueldos)}</b></div><div>Gastos<b>${fmt(S.gastos)}</b></div>${adm?`<div>Ganancia<b>${fmt(S.gan)}</b></div>`:''}</div>
+    <h2>Por obra</h2>
+    <table><tr><th>Obra</th>${adm?'<th>Cobrado</th>':''}<th>Sueldos</th><th>Gastos</th>${adm?'<th>Ganancia</th>':''}</tr>
+    ${S.porObra.map(o=>`<tr><td>${esc(o.nombre)}</td>${adm?`<td>${fmt(o.c)}</td>`:''}<td>${fmt(o.s)}</td><td>${fmt(o.g)}</td>${adm?`<td>${fmt(o.gan)}</td>`:''}</tr>`).join('')}</table>
+    <h2>Trabajadores</h2>
+    <table><tr><th>Trabajador</th><th>Días</th><th>Horas</th><th>Extra</th><th>Sueldo</th>${adm?'<th>Adelantos</th><th>Saldo adel.</th>':''}</tr>
+    ${S.porTrab.map(x=>`<tr><td>${esc(x.t.nombre)}</td><td>${x.dias}</td><td>${x.horas}</td><td>${x.ext}</td><td>${fmt(x.sueldo)}</td>${adm?`<td>${fmt(x.adel)}</td><td>${fmt(x.saldo)}</td>`:''}</tr>`).join('')}</table>
+    ${adm?`<h2>Cobros por tipo de trabajo</h2><table><tr><th>Tipo de trabajo</th><th>Total</th></tr>${S.porTipo.map(([c,v])=>`<tr><td>${esc(c)}</td><td>${fmt(v)}</td></tr>`).join('')||'<tr><td colspan="2">Sin cobros</td></tr>'}</table>`:''}
+    <h2>Gastos por categoría</h2>
+    <table><tr><th>Categoría</th><th>Total</th></tr>${S.porCat.map(([c,v])=>`<tr><td>${esc(c)}</td><td>${fmt(v)}</td></tr>`).join('')||'<tr><td colspan="2">Sin gastos</td></tr>'}</table>
+    <h2>Detalle de movimientos</h2>
+    <table><tr><th>Fecha</th><th style="text-align:left">Movimiento</th><th style="text-align:left">Cargado por</th><th>Monto</th></tr>
+    ${movs.map(({r,t})=>`<tr><td>${fd(r.fecha)}</td><td style="text-align:left">${esc(describe(r,t))}</td><td style="text-align:left">${esc(quien(r.cargado_por))}</td><td>${fmt(montoReg(r,t))}</td></tr>`).join('')}</table>`;
+}
+$('#verDoc').onclick=()=>{ buildDoc(); $('#doc').classList.add('open'); $('#doc').scrollTop=0; };
+$('#pdf').onclick=()=>{ buildDoc(); $('#doc').classList.add('open'); setTimeout(()=>window.print(),200); };
+$('#docPdf').onclick=()=>window.print();
+$('#docClose').onclick=()=>$('#doc').classList.remove('open');
+$('#csv').onclick=()=>{
+  const S=stats(), adm=esAdmin();
+  const xs=[...S.J.map(r=>({r,t:'jornadas'})),...S.G.map(r=>({r,t:'gastos'})),...(adm?[...S.C.map(r=>({r,t:'cobros'})),...S.A.map(r=>({r,t:'adelantos'}))]:[])].sort((a,b)=>b.r.fecha.localeCompare(a.r.fecha));
+  const nom={jornadas:'Jornada',gastos:'Gasto',cobros:'Cobro',adelantos:'Adelanto'};
+  const rows=[['Fecha','Tipo','Obra','Detalle','Monto','Cargado por']].concat(xs.map(({r,t})=>[fd(r.fecha),nom[t],r.obra_id!==undefined?obraN(r.obra_id):'',describe(r,t),Math.round(montoReg(r,t)),quien(r.cargado_por)]));
+  const blob=new Blob(['﻿'+rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(';')).join('\n')],{type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`informe-${per}-${hoyF()}.csv`; a.click();
+};
+
+/* ===================== EQUIPO ===================== */
+let editId=null, emodo='igual', efrec='semana';
+function renderEq(){
+  if(!esAdmin()) return;
+  $('#trabList').innerHTML = T.trabajadores.length ? T.trabajadores.map(t=>`<li data-id="${t.id}" style="cursor:pointer"><span><b>${esc(t.nombre)}</b>${t.activo===false?' <span class="tag">inactivo</span>':''}<br><span class="muted">${fmt(t.precio_jornada)} / ${+t.horas_jornada} h · ${fmt(valorHora(t))}/h · ${t.frecuencia==='dia'?'por día':'por semana'}${t.telefono?'':' · sin WhatsApp'}</span></span><span class="tag">${t.extra_modo==='igual'?'Extra igual':t.extra_modo==='porcentaje'?'Extra +'+(+t.extra_porcentaje)+'%':'Extra fijo'}</span></li>`).join('') : '<li class="muted">Todavía no hay trabajadores.</li>';
+  $$('#trabList li[data-id]').forEach(li=>li.onclick=()=>abrirTrab(li.dataset.id));
+  $('#obraList').innerHTML = T.obras.map(o=>`<li><span>${esc(o.nombre)}</span><button class="btn ghost sm" data-obra="${o.id}">${o.activa!==false?'Terminar':'Reactivar'}</button></li>`).join('') || '<li class="muted">Todavía no hay obras.</li>';
+  $$('[data-obra]').forEach(b=>b.onclick=()=>toggleActivo('obras',b.dataset.obra,'activa').then(renderEq));
+  const opT='<option value="">(sin ficha)</option>'+T.trabajadores.map(t=>`<option value="${t.id}">${esc(t.nombre)}</option>`).join('');
+  $('#userList').innerHTML = T.perfiles.map(p=>`<li style="align-items:flex-start;flex-wrap:wrap"><span style="flex:1 1 100%"><b>${esc(p.nombre)}</b> <span class="muted">${esc(p.email||'')}</span></span>
+    <select data-urol="${p.id}" ${p.id===me.id?'disabled':''} style="flex:1">${['admin','encargado','trabajador'].map(r=>`<option value="${r}" ${p.rol===r?'selected':''}>${{admin:'Administrador',encargado:'Encargado',trabajador:'Trabajador'}[r]}</option>`).join('')}</select>
+    <select data-utra="${p.id}" style="flex:1">${opT}</select></li>`).join('');
+  T.perfiles.forEach(p=>{ const s=$(`[data-utra="${p.id}"]`); if(s) s.value=p.trabajador_id||''; });
+  $$('[data-urol],[data-utra]').forEach(s=>s.onchange=async()=>{
+    if(!await online()) return;
+    const id=s.dataset.urol||s.dataset.utra, campo=s.dataset.urol?'rol':'trabajador_id', v=s.value||null;
+    const {error}=await sb.from('perfiles').update({[campo]:v}).eq('id',id);
+    if(error) return toast('Error: '+error.message);
+    byId('perfiles',id)[campo]=v; toast('Usuario actualizado');
+  });
+}
+function abrirTrab(id){
+  editId=id; const t=id?byId('trabajadores',id):{nombre:'',telefono:'',precio_jornada:'',horas_jornada:8,extra_modo:'igual',extra_porcentaje:50,extra_fijo:0,recargo_sabado:0,recargo_domingo:0,frecuencia:'semana',activo:true};
+  $('#te-title').textContent=id?'Editar a '+t.nombre:'Nuevo trabajador';
+  $('#te-nombre').value=t.nombre; $('#te-tel').value=t.telefono||''; $('#te-precio').value=t.precio_jornada===''?'':+t.precio_jornada; $('#te-horas').value=+t.horas_jornada;
+  $('#te-pct').value=+t.extra_porcentaje; $('#te-fijo').value=+t.extra_fijo; $('#te-sab').value=+t.recargo_sabado; $('#te-dom').value=+t.recargo_domingo; $('#te-activo').checked=t.activo!==false;
+  emodo=t.extra_modo; efrec=t.frecuencia; teCalc();
+  $('#trabEdit').classList.remove('hide'); $('#trabEdit').scrollIntoView({behavior:'smooth'}); $('#te-nombre').focus();
+}
+function teVals(){ return {nombre:$('#te-nombre').value.trim(),telefono:$('#te-tel').value.replace(/\D/g,'')||null,precio_jornada:num($('#te-precio').value),horas_jornada:num($('#te-horas').value)||8,extra_modo:emodo,extra_porcentaje:num($('#te-pct').value),extra_fijo:num($('#te-fijo').value),recargo_sabado:num($('#te-sab').value),recargo_domingo:num($('#te-dom').value),frecuencia:efrec,activo:$('#te-activo').checked}; }
+function teCalc(){
+  const t=teVals();
+  $$('#te-modo button').forEach(b=>b.classList.toggle('on',b.dataset.m===emodo));
+  $$('#te-frec button').forEach(b=>b.classList.toggle('on',b.dataset.f===efrec));
+  $('#te-pctbox').classList.toggle('hide',emodo!=='porcentaje'); $('#te-fijobox').classList.toggle('hide',emodo!=='fijo');
+  $('#te-hora').textContent=`Valor hora: ${fmt(valorHora(t))}`;
+  $('#te-extra').textContent=`Hora extra en día hábil: ${fmt(valorExtra(t))}`;
+  $('#te-dias').textContent=`Sábado: ${fmt(valorExtraDia(t,'sabado'))}/h · Domingo y feriado: ${fmt(valorExtraDia(t,'domingo'))}/h`;
+}
+$$('#te-modo button').forEach(b=>b.onclick=()=>{emodo=b.dataset.m; teCalc();});
+$$('#te-frec button').forEach(b=>b.onclick=()=>{efrec=b.dataset.f; teCalc();});
+['te-precio','te-horas','te-pct','te-fijo','te-sab','te-dom'].forEach(f=>$('#'+f).addEventListener('input',teCalc));
+$('#trabNuevo').onclick=()=>abrirTrab(null);
+$('#te-cancel').onclick=()=>$('#trabEdit').classList.add('hide');
+$('#te-save').onclick=async()=>{
+  const v=teVals(); if(!v.nombre) return toast('Poné el nombre'); if(!v.precio_jornada) return toast('Poné el precio de la jornada');
+  if(!await online()) return;
+  const q = editId ? sb.from('trabajadores').update(v).eq('id',editId).select().single() : sb.from('trabajadores').insert(v).select().single();
+  const {data,error}=await q; if(error) return toast('Error: '+error.message);
+  if(editId){ Object.assign(byId('trabajadores',editId),data); } else T.trabajadores.push(data);
+  $('#trabEdit').classList.add('hide'); llenarSelects(); renderEq(); toast('Guardado. Los cambios de precio valen para las jornadas nuevas');
+};
+$('#obraOk').onclick=async()=>{
+  const n=$('#obraNew').value.trim(); if(!n) return; if(!await online()) return;
+  const {data,error}=await sb.from('obras').insert({nombre:n}).select().single(); if(error) return toast('Error: '+error.message);
+  T.obras.push(data); $('#obraNew').value=''; llenarSelects(); renderEq(); toast('Obra agregada');
+};
+
+/* ===================== Render general ===================== */
+function render(){ pintarCola(); renderPend(); renderUltimas(); renderPagos(); renderMios(); renderInf(); renderEq(); }
+
+/* ===================== Arranque ===================== */
+(async function(){
+  netState();
+  const cod=new URLSearchParams(location.search).get('c');
+  if(cod) return pantallaConfirmar(cod);
+  if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
+  let sesion=null;
+  if(sb){ try{ sesion=(await sb.auth.getSession()).data.session; }catch(e){} }
+  if(sesion || (!navigator.onLine && store.get('go-cache',null))) return iniciar();
+  show('s-login');
+  if(!sb){ $('#lg-err').textContent='No se pudo cargar la conexión con el servidor. Revisá que tengas internet y recargá.'; }
+})();
+</script>
+</body>
+</html>
