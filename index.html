@@ -136,7 +136,8 @@ a{color:var(--accent)}
       <button data-m="up">Crear cuenta</button>
     </div>
     <div id="lg-nombreBox" class="hide"><label>Tu nombre</label><input id="lg-nombre" autocomplete="name"></div>
-    <label>Usuario o correo</label><input id="lg-email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false">
+    <label id="lg-userLbl">Teléfono o usuario</label><input id="lg-email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="3411234567">
+    <p class="muted" id="lg-telAyuda" style="margin:4px 0 0">Con código de área, sin 0 ni 15. Ej: 3411234567</p>
     <label>Contraseña</label>
     <div class="pass"><input id="lg-pass" type="password" autocomplete="current-password"><button type="button" id="lg-ojo" aria-label="Mostrar contraseña" title="Mostrar contraseña">
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><line id="lg-ojo-tachado" x1="3" y1="3" x2="21" y2="21"/></svg></button></div>
@@ -349,7 +350,8 @@ a{color:var(--accent)}
   <div class="card hide" id="trabEdit">
     <h2 id="te-title">Trabajador</h2>
     <label>Nombre</label><input id="te-nombre">
-    <label>WhatsApp (con código de país, sin espacios)</label><input id="te-tel" inputmode="tel" placeholder="5493411234567">
+    <label>Teléfono / WhatsApp (con código de área, sin 0 ni 15)</label><input id="te-tel" inputmode="tel" placeholder="3411234567">
+    <p class="muted" style="margin:4px 0 0">Si el trabajador crea su cuenta con este número, queda vinculado solo.</p>
     <div class="row">
       <div><label>Precio jornada ($)</label><input id="te-precio" inputmode="numeric"></div>
       <div><label>Horas jornada</label><input id="te-horas" inputmode="decimal"></div>
@@ -380,6 +382,11 @@ a{color:var(--accent)}
     <h2>Obras</h2>
     <ul class="list" id="obraList"></ul>
     <div class="inline-add"><input id="obraNew" placeholder="Nombre de la obra"><button id="obraOk">Agregar</button></div>
+  </div>
+  <div class="card hide" id="aliasCard">
+    <h2>Tu usuario de administrador general</h2>
+    <p class="muted" style="margin-top:-6px">Además de tu teléfono, podés entrar con este usuario. Solo vos lo podés tener.</p>
+    <div class="inline-add"><input id="aliasIn" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Ej: nicanor2026"><button id="aliasOk">Guardar</button></div>
   </div>
   <div class="card">
     <h2>Usuarios y roles</h2>
@@ -471,31 +478,59 @@ async function pantallaConfirmar(cod){
 /* ===================== Login ===================== */
 // Se puede entrar con un usuario (sin @): por dentro se guarda como un correo interno.
 const DOMINIO_USUARIOS = 'usuarios.gastosdeobra.local';
-const aEmail = v => { const t=String(v||'').trim().toLowerCase(); return t.includes('@') ? t : (t ? `${t}@${DOMINIO_USUARIOS}` : ''); };
-const deEmail = e => String(e||'').replace('@'+DOMINIO_USUARIOS,'');
+// Teléfono argentino → 10 números (código de área + número). null si no parece un teléfono.
+function tel10(v){
+  const t=String(v||'').trim(); if(!t || /[a-z]/i.test(t)) return null;
+  let d=t.replace(/\D/g,'');
+  if(d.startsWith('54')) d=d.slice(2);
+  if(d.length===11 && d.startsWith('9')) d=d.slice(1);
+  if(d.startsWith('0')) d=d.slice(1);
+  if(d.length===12){ for(const k of [2,3,4]) if(d.slice(k,k+2)==='15'){ d=d.slice(0,k)+d.slice(k+2); break; } } // 0341 15 ...
+  return d.length===10 ? d : null;
+}
+const telEmail = t => `${t}@${DOMINIO_USUARIOS}`;
+// Devuelve el identificador interno para entrar: teléfono, correo o (solo admin general) usuario escrito.
+async function aEmail(v){
+  const t=String(v||'').trim();
+  if(!t) return '';
+  if(t.includes('@')) return t.toLowerCase();
+  const tel=tel10(t); if(tel) return telEmail(tel);
+  if(/^[\d\s()+-]+$/.test(t)) throw new Error('telefono');
+  const {data,error}=await sb.rpc('login_alias',{p_alias:t});
+  if(error || !data) throw new Error('alias');
+  return data;
+}
+const deEmail = e => { const u=String(e||'').replace('@'+DOMINIO_USUARIOS,''); return /^\d{10}$/.test(u) ? `Tel. ${u}` : u; };
 $('#lg-ojo').onclick=()=>{ const i=$('#lg-pass'), ver=i.type==='password'; i.type=ver?'text':'password'; $('#lg-ojo-tachado').style.display=ver?'none':''; $('#lg-ojo').setAttribute('aria-label',ver?'Ocultar contraseña':'Mostrar contraseña'); };
 let lgModo='in';
-$$('#lgSeg button').forEach(b=>b.onclick=()=>{ lgModo=b.dataset.m; $$('#lgSeg button').forEach(x=>x.classList.toggle('on',x===b)); $('#lg-nombreBox').classList.toggle('hide',lgModo!=='up'); $('#lg-go').textContent=lgModo==='up'?'Crear cuenta':'Entrar'; $('#lg-err').textContent=''; });
+$$('#lgSeg button').forEach(b=>b.onclick=()=>{ lgModo=b.dataset.m; $$('#lgSeg button').forEach(x=>x.classList.toggle('on',x===b)); $('#lg-nombreBox').classList.toggle('hide',lgModo!=='up'); $('#lg-userLbl').textContent=lgModo==='up'?'Teléfono':'Teléfono o usuario'; $('#lg-go').textContent=lgModo==='up'?'Crear cuenta':'Entrar'; $('#lg-err').textContent=''; });
 $('#lg-go').onclick=async()=>{
-  const email=aEmail($('#lg-email').value), password=$('#lg-pass').value;
-  $('#lg-err').textContent='';
-  if(!email||password.length<6) return $('#lg-err').textContent='Poné tu usuario y una contraseña de al menos 6 letras o números.';
+  const usuario=$('#lg-email').value, password=$('#lg-pass').value;
+  $('#lg-err').style.color=''; $('#lg-err').textContent='';
+  if(!usuario.trim()||password.length<6) return $('#lg-err').textContent='Poné tu teléfono y una contraseña de al menos 6 letras o números.';
   if(!sb) return $('#lg-err').textContent='No hay conexión con el servidor.';
   $('#lg-go').disabled=true;
   try{
     if(lgModo==='up'){
-      const nombre=$('#lg-nombre').value.trim();
+      const nombre=$('#lg-nombre').value.trim(), tel=tel10(usuario);
       if(!nombre) return $('#lg-err').textContent='Poné tu nombre.';
-      const {data,error}=await sb.auth.signUp({email,password,options:{data:{nombre}, emailRedirectTo: APP_URL}});
+      if(!tel) return $('#lg-err').textContent='Escribí tu teléfono con código de área, sin 0 ni 15. Ej: 3411234567';
+      const {data,error}=await sb.auth.signUp({email:telEmail(tel),password,options:{data:{nombre,telefono:tel}}});
       if(error) throw error;
-      if(!data.session){ $('#lg-err').style.color='var(--ok)'; $('#lg-err').textContent='Cuenta creada. Si pusiste un correo, abrí el mensaje que te llegó para activarla y después entrá acá.'; return; }
+      if(!data.session){ $$('#lgSeg button')[0].click(); $('#lg-err').style.color='var(--ok)'; $('#lg-err').textContent='Cuenta creada. Ya podés entrar.'; return; }
     } else {
+      const email=await aEmail(usuario);
       const {error}=await sb.auth.signInWithPassword({email,password});
       if(error) throw error;
     }
     store.set('go-login-at',Date.now());
     await iniciar();
-  }catch(e){ $('#lg-err').style.color=''; $('#lg-err').textContent = /Invalid login/i.test(e.message)?'Usuario o contraseña incorrectos.':/confirm/i.test(e.message)?'Primero activá la cuenta desde el correo que te llegó.':'Error: '+e.message; }
+  }catch(e){ const m=e.message||''; $('#lg-err').style.color=''; $('#lg-err').textContent =
+      m==='telefono' ? 'Escribí tu teléfono con código de área, sin 0 ni 15. Ej: 3411234567'
+    : (m==='alias' || /Invalid login/i.test(m)) ? 'Teléfono, usuario o contraseña incorrectos.'
+    : /already|registered|exists/i.test(m) ? 'Ese teléfono ya tiene una cuenta. Tocá "Entrar".'
+    : /confirm/i.test(m) ? 'La cuenta todavía no está activada. Avisale al administrador.'
+    : 'Error: '+m; }
   finally{ $('#lg-go').disabled=false; }
 };
 $('#who').onclick=async()=>{ if(!confirm('¿Cerrar sesión?')) return; if(cola.length && !confirm('Hay cargas sin subir. Si salís ahora se pierden. ¿Salir igual?')) return; await cerrarSesion(true); };
@@ -548,7 +583,7 @@ async function iniciar(){
   await cargarDatos();
   if(!me){ show('s-login'); return; }
   if(await vencioAdmin()) return;
-  aplicarRol(); irA('cargar'); llenarSelects(); $('#tipoSeg button[data-t=gasto]').click(); loadDraft(); render(); sync();
+  aplicarRol(); irA('cargar'); llenarSelects(); setTipo('gasto'); loadDraft(); render(); sync();
 }
 function irA(v){
   $$('#nav button').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
@@ -676,10 +711,11 @@ async function agregarNombre(tabla,input,box,onOk){
 $('#catOk').onclick=()=>agregarNombre('categorias_gasto','#catNew','#catAdd',id=>{catId=id; renderCats();});
 $('#tipoOk').onclick=()=>agregarNombre('tipos_trabajo','#tipoNew','#tipoAdd',id=>{tipoTrabId=id; renderTipos();});
 
-$$('#tipoSeg button').forEach(b=>b.onclick=()=>{
-  tipo=b.dataset.t; $$('#tipoSeg button').forEach(x=>x.classList.toggle('on',x===b));
-  ['gasto','jornada','adelanto','cobro'].forEach(t=>$('#f-'+t).classList.toggle('hide',t!==tipo)); calcForm(); saveDraft();
-});
+function setTipo(t){
+  tipo=t; $$('#tipoSeg button').forEach(x=>x.classList.toggle('on',x.dataset.t===t));
+  ['gasto','jornada','adelanto','cobro'].forEach(x=>$('#f-'+x).classList.toggle('hide',x!==t)); calcForm();
+}
+$$('#tipoSeg button').forEach(b=>b.onclick=()=>{ setTipo(b.dataset.t); saveDraft(); });
 $$('#c-modo button').forEach(b=>b.onclick=()=>{
   cmodo=b.dataset.m; $$('#c-modo button').forEach(x=>x.classList.toggle('on',x===b));
   $('#c-m2box').classList.toggle('hide',cmodo!=='m2'); $('#c-hbox').classList.toggle('hide',cmodo!=='hora'); $('#c-totbox').classList.toggle('hide',cmodo!=='total'); calcForm();
@@ -872,7 +908,7 @@ $('#waBtn').onclick=async()=>{
     const {error:e2}=await sb.from('jornadas').update({pago_id:p.id}).in('id',ids);
     if(e2) throw e2;
     T.pagos.push(p); l.js.forEach(j=>j.pago_id=p.id); store.set('go-cache',{me,T,en:Date.now()});
-    const url='https://wa.me/'+String(liqT.telefono||'').replace(/\D/g,'')+'?text='+encodeURIComponent(msg);
+    const t10=tel10(liqT.telefono), url='https://wa.me/'+(t10?'549'+t10:String(liqT.telefono||'').replace(/\D/g,''))+'?text='+encodeURIComponent(msg);
     if(w) w.location.href=url; else if(liqT.telefono) location.href=url;
     $('#liqCard').classList.add('hide'); renderPagos(); toast('Pago registrado. Esperando confirmación');
   }catch(e){ if(w) w.close(); toast('No se pudo registrar: '+e.message); }
@@ -971,9 +1007,12 @@ function renderEq(){
   $$('#trabList li[data-id]').forEach(li=>li.onclick=()=>abrirTrab(li.dataset.id));
   $('#obraList').innerHTML = T.obras.map(o=>`<li><span>${esc(o.nombre)}</span><button class="btn ghost sm" data-obra="${o.id}">${o.activa!==false?'Terminar':'Reactivar'}</button></li>`).join('') || '<li class="muted">Todavía no hay obras.</li>';
   $$('[data-obra]').forEach(b=>b.onclick=()=>toggleActivo('obras',b.dataset.obra,'activa').then(renderEq));
+  const yo=byId('perfiles',me.id)||me;
+  $('#aliasCard').classList.toggle('hide',!yo.admin_general);
+  if(yo.admin_general && document.activeElement!==$('#aliasIn')) $('#aliasIn').value=yo.alias||'';
   const opT='<option value="">(sin ficha)</option>'+T.trabajadores.map(t=>`<option value="${t.id}">${esc(t.nombre)}</option>`).join('');
-  $('#userList').innerHTML = T.perfiles.map(p=>`<li style="align-items:flex-start;flex-wrap:wrap"><span style="flex:1 1 100%"><b>${esc(p.nombre)}</b> <span class="muted">${esc(deEmail(p.email))}</span></span>
-    <select data-urol="${p.id}" ${p.id===me.id?'disabled':''} style="flex:1">${['admin','encargado','trabajador'].map(r=>`<option value="${r}" ${p.rol===r?'selected':''}>${{admin:'Administrador',encargado:'Encargado',trabajador:'Trabajador'}[r]}</option>`).join('')}</select>
+  $('#userList').innerHTML = T.perfiles.map(p=>`<li style="align-items:flex-start;flex-wrap:wrap"><span style="flex:1 1 100%"><b>${esc(p.nombre)}</b> <span class="muted">${esc(deEmail(p.email))}</span>${p.admin_general?' <span class="tag ok">Admin general</span>':''}</span>
+    <select data-urol="${p.id}" ${(p.id===me.id||p.admin_general)?'disabled':''} style="flex:1">${['admin','encargado','trabajador'].map(r=>`<option value="${r}" ${p.rol===r?'selected':''}>${{admin:'Administrador',encargado:'Encargado',trabajador:'Trabajador'}[r]}</option>`).join('')}</select>
     <select data-utra="${p.id}" style="flex:1">${opT}</select></li>`).join('');
   T.perfiles.forEach(p=>{ const s=$(`[data-utra="${p.id}"]`); if(s) s.value=p.trabajador_id||''; });
   $$('[data-urol],[data-utra]').forEach(s=>s.onchange=async()=>{
@@ -992,7 +1031,7 @@ function abrirTrab(id){
   emodo=t.extra_modo; efrec=t.frecuencia; teCalc();
   $('#trabEdit').classList.remove('hide'); $('#trabEdit').scrollIntoView({behavior:'smooth'}); $('#te-nombre').focus();
 }
-function teVals(){ return {nombre:$('#te-nombre').value.trim(),telefono:$('#te-tel').value.replace(/\D/g,'')||null,precio_jornada:num($('#te-precio').value),horas_jornada:num($('#te-horas').value)||8,extra_modo:emodo,extra_porcentaje:num($('#te-pct').value),extra_fijo:num($('#te-fijo').value),recargo_sabado:num($('#te-sab').value),recargo_domingo:num($('#te-dom').value),frecuencia:efrec,activo:$('#te-activo').checked}; }
+function teVals(){ return {nombre:$('#te-nombre').value.trim(),telefono:tel10($('#te-tel').value)||($('#te-tel').value.replace(/\D/g,'')||null),precio_jornada:num($('#te-precio').value),horas_jornada:num($('#te-horas').value)||8,extra_modo:emodo,extra_porcentaje:num($('#te-pct').value),extra_fijo:num($('#te-fijo').value),recargo_sabado:num($('#te-sab').value),recargo_domingo:num($('#te-dom').value),frecuencia:efrec,activo:$('#te-activo').checked}; }
 function teCalc(){
   const t=teVals();
   $$('#te-modo button').forEach(b=>b.classList.toggle('on',b.dataset.m===emodo));
@@ -1014,6 +1053,14 @@ $('#te-save').onclick=async()=>{
   const {data,error}=await q; if(error) return toast('Error: '+error.message);
   if(editId){ Object.assign(byId('trabajadores',editId),data); } else T.trabajadores.push(data);
   $('#trabEdit').classList.add('hide'); llenarSelects(); renderEq(); toast('Guardado. Los cambios de precio valen para las jornadas nuevas');
+};
+$('#aliasOk').onclick=async()=>{
+  const a=$('#aliasIn').value.trim().toLowerCase()||null;
+  if(a && (!/^[a-z0-9._-]{4,30}$/.test(a) || /^\d+$/.test(a))) return toast('Usá de 4 a 30 letras y números, sin espacios, y que no sea solo números');
+  if(!await online()) return;
+  const {error}=await sb.from('perfiles').update({alias:a}).eq('id',me.id);
+  if(error) return toast(/unique|duplicate/i.test(error.message)?'Ese usuario ya existe':'Error: '+error.message);
+  const yo=byId('perfiles',me.id); if(yo) yo.alias=a; me.alias=a; toast(a?`Listo: ya podés entrar con "${a}"`:'Usuario borrado');
 };
 $('#obraOk').onclick=async()=>{
   const n=$('#obraNew').value.trim(); if(!n) return; if(!await online()) return;
