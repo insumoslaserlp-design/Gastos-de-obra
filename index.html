@@ -519,7 +519,11 @@ async function iniciar(){
   show('s-app');
   await cargarDatos();
   if(!me){ show('s-login'); return; }
-  aplicarRol(); llenarSelects(); loadDraft(); render(); sync();
+  aplicarRol(); irA('cargar'); llenarSelects(); $('#tipoSeg button[data-t=gasto]').click(); loadDraft(); render(); sync();
+}
+function irA(v){
+  $$('#nav button').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
+  ['cargar','pagos','mios','inf','eq'].forEach(x=>$('#v-'+x).classList.toggle('hide',x!==v));
 }
 function aplicarRol(){
   $('#who').textContent = `${me.nombre} · ${{admin:'Admin',encargado:'Encargado',trabajador:'Trabajador'}[me.rol]}`;
@@ -530,9 +534,7 @@ function aplicarRol(){
   $('#j-trabBox').classList.toggle('hide',esTrab());
 }
 $$('#nav button').forEach(b=>b.onclick=()=>{
-  $$('#nav button').forEach(x=>x.classList.toggle('on',x===b));
-  ['cargar','pagos','mios','inf','eq'].forEach(v=>$('#v-'+v).classList.toggle('hide',v!==b.dataset.v));
-  render(); scrollTo(0,0);
+  irA(b.dataset.v); render(); scrollTo(0,0);
 });
 
 /* ===================== Cola sin conexión ===================== */
