@@ -87,6 +87,9 @@ label.check input{width:22px;height:22px;padding:0}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .center{max-width:420px;margin:40px auto;padding:0 16px}
 .err{color:var(--bad);font-size:14px;margin-top:8px}
+.pass{position:relative}
+.pass input{padding-right:52px}
+.pass button{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:44px;height:44px;border:0;background:none;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center}
 a{color:var(--accent)}
 #doc{position:fixed;inset:0;z-index:30;background:var(--bg);overflow:auto;display:none}
 #doc.open{display:block}
@@ -133,8 +136,10 @@ a{color:var(--accent)}
       <button data-m="up">Crear cuenta</button>
     </div>
     <div id="lg-nombreBox" class="hide"><label>Tu nombre</label><input id="lg-nombre" autocomplete="name"></div>
-    <label>Correo</label><input id="lg-email" type="email" autocomplete="email" inputmode="email">
-    <label>Contraseña</label><input id="lg-pass" type="password" autocomplete="current-password">
+    <label>Usuario o correo</label><input id="lg-email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false">
+    <label>Contraseña</label>
+    <div class="pass"><input id="lg-pass" type="password" autocomplete="current-password"><button type="button" id="lg-ojo" aria-label="Mostrar contraseña" title="Mostrar contraseña">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><line id="lg-ojo-tachado" x1="3" y1="3" x2="21" y2="21"/></svg></button></div>
     <button class="btn" id="lg-go">Entrar</button>
     <p class="err" id="lg-err"></p>
   </div>
@@ -464,12 +469,17 @@ async function pantallaConfirmar(cod){
 }
 
 /* ===================== Login ===================== */
+// Se puede entrar con un usuario (sin @): por dentro se guarda como un correo interno.
+const DOMINIO_USUARIOS = 'usuarios.gastosdeobra.local';
+const aEmail = v => { const t=String(v||'').trim().toLowerCase(); return t.includes('@') ? t : (t ? `${t}@${DOMINIO_USUARIOS}` : ''); };
+const deEmail = e => String(e||'').replace('@'+DOMINIO_USUARIOS,'');
+$('#lg-ojo').onclick=()=>{ const i=$('#lg-pass'), ver=i.type==='password'; i.type=ver?'text':'password'; $('#lg-ojo-tachado').style.display=ver?'none':''; $('#lg-ojo').setAttribute('aria-label',ver?'Ocultar contraseña':'Mostrar contraseña'); };
 let lgModo='in';
 $$('#lgSeg button').forEach(b=>b.onclick=()=>{ lgModo=b.dataset.m; $$('#lgSeg button').forEach(x=>x.classList.toggle('on',x===b)); $('#lg-nombreBox').classList.toggle('hide',lgModo!=='up'); $('#lg-go').textContent=lgModo==='up'?'Crear cuenta':'Entrar'; $('#lg-err').textContent=''; });
 $('#lg-go').onclick=async()=>{
-  const email=$('#lg-email').value.trim(), password=$('#lg-pass').value;
+  const email=aEmail($('#lg-email').value), password=$('#lg-pass').value;
   $('#lg-err').textContent='';
-  if(!email||password.length<6) return $('#lg-err').textContent='Poné tu correo y una contraseña de al menos 6 letras o números.';
+  if(!email||password.length<6) return $('#lg-err').textContent='Poné tu usuario y una contraseña de al menos 6 letras o números.';
   if(!sb) return $('#lg-err').textContent='No hay conexión con el servidor.';
   $('#lg-go').disabled=true;
   try{
@@ -478,16 +488,34 @@ $('#lg-go').onclick=async()=>{
       if(!nombre) return $('#lg-err').textContent='Poné tu nombre.';
       const {data,error}=await sb.auth.signUp({email,password,options:{data:{nombre}, emailRedirectTo: APP_URL}});
       if(error) throw error;
-      if(!data.session){ $('#lg-err').style.color='var(--ok)'; $('#lg-err').textContent='Listo. Te mandamos un correo: abrilo y tocá el enlace para activar la cuenta. Después entrá acá.'; return; }
+      if(!data.session){ $('#lg-err').style.color='var(--ok)'; $('#lg-err').textContent='Cuenta creada. Si pusiste un correo, abrí el mensaje que te llegó para activarla y después entrá acá.'; return; }
     } else {
       const {error}=await sb.auth.signInWithPassword({email,password});
       if(error) throw error;
     }
+    store.set('go-login-at',Date.now());
     await iniciar();
-  }catch(e){ $('#lg-err').style.color=''; $('#lg-err').textContent = /Invalid login/i.test(e.message)?'Correo o contraseña incorrectos.':/confirm/i.test(e.message)?'Primero activá la cuenta desde el correo que te llegó.':'Error: '+e.message; }
+  }catch(e){ $('#lg-err').style.color=''; $('#lg-err').textContent = /Invalid login/i.test(e.message)?'Usuario o contraseña incorrectos.':/confirm/i.test(e.message)?'Primero activá la cuenta desde el correo que te llegó.':'Error: '+e.message; }
   finally{ $('#lg-go').disabled=false; }
 };
-$('#who').onclick=async()=>{ if(!confirm('¿Cerrar sesión?')) return; if(cola.length && !confirm('Hay cargas sin subir. Si salís ahora se pierden. ¿Salir igual?')) return; await sb?.auth.signOut(); store.del('go-cache'); store.del('go-cola'); cola=[]; me=null; show('s-login'); };
+$('#who').onclick=async()=>{ if(!confirm('¿Cerrar sesión?')) return; if(cola.length && !confirm('Hay cargas sin subir. Si salís ahora se pierden. ¿Salir igual?')) return; await cerrarSesion(true); };
+async function cerrarSesion(borrarCola){
+  try{ await sb?.auth.signOut(); }catch(e){}
+  store.del('go-cache'); store.del('go-login-at');
+  if(borrarCola){ store.del('go-cola'); cola=[]; }
+  me=null; show('s-login');
+}
+// El administrador tiene que volver a poner la contraseña cada 24 horas.
+const HORAS_ADMIN = 24;
+async function vencioAdmin(){
+  if(!esAdmin()) return false;
+  let t=store.get('go-login-at',null); if(!t){ t=Date.now(); store.set('go-login-at',t); }
+  if(Date.now()-t < HORAS_ADMIN*3600e3) return false;
+  await cerrarSesion(false);
+  $('#lg-err').style.color=''; $('#lg-err').textContent='Pasaron 24 horas: volvé a entrar con tu contraseña.';
+  return true;
+}
+setInterval(vencioAdmin, 60e3);
 
 /* ===================== Carga de datos ===================== */
 async function fetchAll(tabla){
@@ -519,6 +547,7 @@ async function iniciar(){
   show('s-app');
   await cargarDatos();
   if(!me){ show('s-login'); return; }
+  if(await vencioAdmin()) return;
   aplicarRol(); irA('cargar'); llenarSelects(); $('#tipoSeg button[data-t=gasto]').click(); loadDraft(); render(); sync();
 }
 function irA(v){
@@ -943,7 +972,7 @@ function renderEq(){
   $('#obraList').innerHTML = T.obras.map(o=>`<li><span>${esc(o.nombre)}</span><button class="btn ghost sm" data-obra="${o.id}">${o.activa!==false?'Terminar':'Reactivar'}</button></li>`).join('') || '<li class="muted">Todavía no hay obras.</li>';
   $$('[data-obra]').forEach(b=>b.onclick=()=>toggleActivo('obras',b.dataset.obra,'activa').then(renderEq));
   const opT='<option value="">(sin ficha)</option>'+T.trabajadores.map(t=>`<option value="${t.id}">${esc(t.nombre)}</option>`).join('');
-  $('#userList').innerHTML = T.perfiles.map(p=>`<li style="align-items:flex-start;flex-wrap:wrap"><span style="flex:1 1 100%"><b>${esc(p.nombre)}</b> <span class="muted">${esc(p.email||'')}</span></span>
+  $('#userList').innerHTML = T.perfiles.map(p=>`<li style="align-items:flex-start;flex-wrap:wrap"><span style="flex:1 1 100%"><b>${esc(p.nombre)}</b> <span class="muted">${esc(deEmail(p.email))}</span></span>
     <select data-urol="${p.id}" ${p.id===me.id?'disabled':''} style="flex:1">${['admin','encargado','trabajador'].map(r=>`<option value="${r}" ${p.rol===r?'selected':''}>${{admin:'Administrador',encargado:'Encargado',trabajador:'Trabajador'}[r]}</option>`).join('')}</select>
     <select data-utra="${p.id}" style="flex:1">${opT}</select></li>`).join('');
   T.perfiles.forEach(p=>{ const s=$(`[data-utra="${p.id}"]`); if(s) s.value=p.trabajador_id||''; });
