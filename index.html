@@ -230,7 +230,7 @@ dialog#dlg h2{margin:0 0 8px}
 <!-- ======= Entrar / crear cuenta ======= -->
 <div id="s-login" class="center hide">
   <img class="brand-logo" src="logo.png" alt="Clarita la Cuenta" width="230" height="231">
-  <p class="muted" id="loginSlogan" style="margin:0 0 16px;text-align:center">Gastos, jornadas y pagos, siempre en claro</p>
+  <p class="muted" id="loginSlogan" style="margin:0 0 16px;text-align:center">Gastos, días laborales y pagos, siempre en claro</p>
   <div class="note hide" id="lgEmpresa"></div>
   <div class="card">
     <div class="seg" id="lgSeg">
@@ -273,7 +273,7 @@ dialog#dlg h2{margin:0 0 8px}
   <div class="card" id="cargaCard">
     <div class="seg" id="tipoSeg">
       <button data-t="gasto" class="on" data-perm="cargar_gastos">Gasto</button>
-      <button data-t="jornada" data-perm="cargar_jornadas">Jornada</button>
+      <button data-t="jornada" data-perm="cargar_jornadas">Día laboral</button>
       <button data-t="adelanto" data-perm="cargar_adelantos">Adelanto</button>
       <button data-t="cobro" data-perm="cargar_cobros">Cobro</button>
       <button data-t="caja" data-perm="cargar_adelantos">Caja</button>
@@ -465,7 +465,7 @@ dialog#dlg h2{margin:0 0 8px}
     <div id="mioCalc"></div>
   </div>
   <div class="card">
-    <h2>Mis jornadas</h2>
+    <h2>Mis días laborales</h2>
     <ul class="list" id="mioJor"></ul>
   </div>
   <div class="card">
@@ -551,8 +551,8 @@ dialog#dlg h2{margin:0 0 8px}
     <label>Teléfono / WhatsApp (con código de área, sin 0 ni 15)</label><input id="te-tel" inputmode="tel" placeholder="3411234567">
     <p class="muted" style="margin:4px 0 0">Si el trabajador crea su cuenta con este número, queda vinculado solo.</p>
     <div class="row">
-      <div><label>Precio jornada ($)</label><input id="te-precio" inputmode="decimal" class="money"></div>
-      <div><label>Horas jornada</label><input id="te-horas" inputmode="decimal"></div>
+      <div><label>Precio del día laboral ($)</label><input id="te-precio" inputmode="decimal" class="money"></div>
+      <div><label>Horas del día laboral</label><input id="te-horas" inputmode="decimal"></div>
     </div>
     <p class="muted" id="te-hora"></p>
     <label>Se le paga</label>
@@ -715,7 +715,7 @@ const SUPA_KEY = 'sb_publishable_DgCmBH-xAeoLtRusQ3r3dw_zFp9gU9m';
 const COLS_TRAB = [['dias','Días',x=>x.dias],['horas','Horas',x=>x.horas],['ext','Hs extra',x=>x.ext],['sueldo','Sueldo',x=>fmt(x.sueldo)],['ph','$/h real',x=>fmt(x.ph)],['adel','Adelantos',x=>fmt(x.adel),1],['saldo','Saldo adel.',x=>fmt(x.saldo),1]];
 const COLS_XLS = [['fecha','Fecha'],['tipo','Tipo'],['obra','Obra'],['detalle','Detalle'],['monto','Monto'],['quien','Cargado por']];
 const CFG0 = {
-  app_nombre:'Clarita la Cuenta', slogan:'Gastos, jornadas y pagos, siempre en claro',
+  app_nombre:'Clarita la Cuenta', slogan:'Gastos, días laborales y pagos, siempre en claro',
   firma_texto:'App creada por', firma_marca:'BR Soluciones', firma_link:'',
   wa_titulo:'LIQUIDACIÓN DE PAGO', wa_confirmar:'Por favor, confirme la recepción del pago en este enlace:',
   wa_firma:'Instalaciones de aberturas', confirmado_titulo:'✔ Pago confirmado',
@@ -834,7 +834,7 @@ const ROL_LARGO = {admin:'Administrador',encargado:'Encargado',asistente:'Asiste
 // Permisos que el administrador le puede dar a cada rol
 const PERMISOS = [
   ['cargar_gastos','Cargar gastos'],
-  ['cargar_jornadas','Cargar jornadas'],
+  ['cargar_jornadas','Cargar días laborales'],
   ['cargar_adelantos','Cargar adelantos'],
   ['cargar_cobros','Cargar cobros'],
   ['aprobar','Aprobar cargas (lo suyo entra aprobado)'],
@@ -1179,7 +1179,7 @@ function calcForm(){
     const dia=tipoDia(f,$('#j-fer').checked), ve=valorExtraDia(t,dia), rc=recDia(t,dia);
     $('#j-dia').textContent=`Día: ${DIA_TXT[dia]}${auto?' (feriado nacional)':''}${rc?` · hora extra con ${rc}% más`:''}`;
     const pd=precioDia(t,h);
-    $('#j-calc').textContent = esTrab()||jEstado!=='trabajado' ? '' : pd<+t.precio_jornada ? `Día corto: ${fmtH(h)} h × ${fmt(valorHora(t))} = ${fmt(pd)} (la jornada entera es ${fmt(t.precio_jornada)})` : `Jornada ${fmt(t.precio_jornada)} (${fmt(valorHora(t))}/h)` + (e?` + ${fmtH(e)} h extra × ${fmt(ve)} = ${fmt(+t.precio_jornada+e*ve)}`:'');
+    $('#j-calc').textContent = esTrab()||jEstado!=='trabajado' ? '' : pd<+t.precio_jornada ? `Día corto: ${fmtH(h)} h × ${fmt(valorHora(t))} = ${fmt(pd)} (el día laboral entero es ${fmt(t.precio_jornada)})` : `Día laboral ${fmt(t.precio_jornada)} (${fmt(valorHora(t))}/h)` + (e?` + ${fmtH(e)} h extra × ${fmt(ve)} = ${fmt(+t.precio_jornada+e*ve)}`:'');
   } else { $('#j-dia').textContent=''; $('#j-calc').textContent=''; $('#j-tot').innerHTML=''; }
   const tk=byId('trabajadores',$('#k-trab').value);
   if(tk){ const s=saldoCaja(tk.id), m=num($('#k-monto').value); $('#k-saldo').textContent=`Caja de ${tk.nombre}: ${fmt(s)}`+(m?` → queda en ${fmt(s+m)}`:''); }
@@ -1373,7 +1373,7 @@ function describe(r,tabla){
   if(tabla==='jornadas'){
     if(!trabajadoJ(r)) return `${trabN(r.trabajador_id)} · ${ESTADO_DIA[r.estado_dia]||r.estado_dia}${r.nota?' · '+r.nota:''}`;
     const det=(r.tramos&&r.tramos.length) ? r.tramos.map(tramoTxt).join(' / ') : obraN(r.obra_id);
-    return `Jornada ${trabN(r.trabajador_id)} · ${det}${r.horas&&+r.horas?` · ${fmtH(r.horas)} h`:''}${+r.horas_extra?` (+${fmtH(r.horas_extra)} h extra${r.dia&&r.dia!=='habil'?' '+(DIA_TXT[r.dia]||''):''})`:''}${r.vehiculo?' · '+r.vehiculo:''}${r.nota?' · '+r.nota:''}`;
+    return `Día laboral ${trabN(r.trabajador_id)} · ${det}${r.horas&&+r.horas?` · ${fmtH(r.horas)} h`:''}${+r.horas_extra?` (+${fmtH(r.horas_extra)} h extra${r.dia&&r.dia!=='habil'?' '+(DIA_TXT[r.dia]||''):''})`:''}${r.vehiculo?' · '+r.vehiculo:''}${r.nota?' · '+r.nota:''}`;
   }
   if(tabla==='entregas') return `Caja de ${trabN(r.trabajador_id)} · ${r.detalle?r.detalle+' entregó':'entrega'}`;
   if(tabla==='adelantos') return `Adelanto a ${trabN(r.trabajador_id)}${r.motivo?' · '+r.motivo:''}`;
@@ -1404,8 +1404,8 @@ async function borrar(t,id){
   if(!esAdmin()) return;
   const local=id.startsWith('local:'), r=local ? T[t].find(x=>x.id_local===id.slice(6)) : byId(t,id);
   if(!r) return;
-  if(t==='jornadas' && r.pago_id) return toast('Esta jornada ya está en un pago. Primero borrá ese pago en Pagos.');
-  const extra = t==='pagos' ? '\n\nLas jornadas de este pago vuelven a quedar sin pagar y el descuento de adelantos se anula.' : '';
+  if(t==='jornadas' && r.pago_id) return toast('Este día laboral ya está en un pago. Primero borrá ese pago en Pagos.');
+  const extra = t==='pagos' ? '\n\nLos días laborales de este pago vuelven a quedar sin pagar y el descuento de adelantos se anula.' : '';
   if(!confirm(`¿Borrar esto?\n\n${describe(r,t)}\n${fd(r.fecha||r.cargado_en)} · ${fmt(montoReg(r,t))}${extra}\n\nNo se puede deshacer.`)) return;
   if(local){
     cola=cola.filter(op=>op.fila.id_local!==r.id_local); guardarCola();
@@ -1499,10 +1499,10 @@ function renderPagos(){
 $('#histReload').onclick=async()=>{ if(!await online()) return; try{ T.pagos=await fetchAll('pagos'); renderPagos(); toast('Actualizado'); }catch(e){ toast('Error: '+e.message); } };
 function openLiq(tid){
   liqT=byId('trabajadores',tid); const l=liq(liqT), s=saldoAdel(tid);
-  if(!l.dias){ toast('No hay jornadas aprobadas sin pagar en este período'); return; }
+  if(!l.dias){ toast('No hay días laborales aprobados sin pagar en este período'); return; }
   liqCod=codigo();
   $('#liq-title').textContent='Liquidación de '+liqT.nombre;
-  $('#liqLines').innerHTML=(l.diasC?`<div class="line"><span>Jornadas: ${l.diasC} × ${l.precioTxt}</span><span>${fmt(l.mC)}</span></div>`:'')+
+  $('#liqLines').innerHTML=(l.diasC?`<div class="line"><span>Días laborales completos: ${l.diasC} × ${l.precioTxt}</span><span>${fmt(l.mC)}</span></div>`:'')+
     (l.cortos.n?`<div class="line"><span>Días cortos: ${fmtH(l.cortos.h)} h × ${fmt(valorHora(liqT))}</span><span>${fmt(l.cortos.m)}</span></div>`:'')+
     l.ext2.map(x=>`<div class="line"><span>Horas extra ${x.txt}: ${x.h} h × ${fmt(x.v)}</span><span>${fmt(x.m)}</span></div>`).join('')+
     `<div class="line" style="font-weight:600"><span>Subtotal</span><span>${fmt(l.bruto)}</span></div>`;
@@ -1529,8 +1529,8 @@ function mensaje(){
   });
   const hTot=l.js.reduce((x,j)=>x+horasJ(j),0);
   m+=`${L}\n*Horas trabajadas:* ${fmtH(hTot)} h${l.ext?` (${fmtH(hTot-l.ext)} normales + ${fmtH(l.ext)} extra)`:''}\n`;
-  m+=`*Jornada:* ${fmt(liqT.precio_jornada)} por ${fmtH(hj)} h · *Valor hora:* ${fmt(vh)}\n${L}\n`;
-  if(l.diasC) m+=`*Jornadas completas:* ${l.diasC} × ${l.precioTxt} = ${fmt(l.mC)}\n`;
+  m+=`*Día laboral:* ${fmt(liqT.precio_jornada)} por ${fmtH(hj)} h · *Valor hora:* ${fmt(vh)}\n${L}\n`;
+  if(l.diasC) m+=`*Días laborales completos:* ${l.diasC} × ${l.precioTxt} = ${fmt(l.mC)}\n`;
   if(l.cortos.n) m+=`*Días cortos:* ${fmtH(l.cortos.h)} h × ${fmt(vh)} = ${fmt(l.cortos.m)}\n`;
   l.ext2.forEach(x=>{ m+=`*Horas extra (${x.txt}):* ${fmtH(x.h)} h × ${fmt(x.v)} = ${fmt(x.m)}\n`; });
   m+=`*Subtotal:* ${fmt(l.bruto)}\n`;
@@ -1628,8 +1628,8 @@ function renderMios(){
     `<div class="kpi">Por cobrar (todo)<b>${fmt(porCobrar)}</b></div><div class="kpi">Debo (adelantos y gastos)<b class="${saldoAdel(tid)>0?'neg':''}">${fmt(saldoAdel(tid))}</b></div>`;
   // Cómo se calculó lo ganado (igual que el mensaje de pago)
   const dg=ficha?desglose(ficha,ok):null, vh=ficha?valorHora(ficha):0;
-  $('#mioCalc').innerHTML = dg && (dg.dias||dg.ext) ? `<p class="muted" style="margin:0 0 6px">Tu jornada: ${fmt(ficha.precio_jornada)} por ${fmtH(hj)} h (${fmt(vh)} la hora)</p>`+
-    (dg.diasC?`<div class="line"><span>Jornadas completas: ${dg.diasC} × ${dg.precioTxt}</span><span>${fmt(dg.mC)}</span></div>`:'')+
+  $('#mioCalc').innerHTML = dg && (dg.dias||dg.ext) ? `<p class="muted" style="margin:0 0 6px">Tu día laboral: ${fmt(ficha.precio_jornada)} por ${fmtH(hj)} h (${fmt(vh)} la hora)</p>`+
+    (dg.diasC?`<div class="line"><span>Días laborales completos: ${dg.diasC} × ${dg.precioTxt}</span><span>${fmt(dg.mC)}</span></div>`:'')+
     (dg.cortos.n?`<div class="line"><span>Días cortos: ${fmtH(dg.cortos.h)} h × ${fmt(vh)}</span><span>${fmt(dg.cortos.m)}</span></div>`:'')+
     dg.ext2.map(x=>`<div class="line"><span>Horas extra ${x.txt}: ${fmtH(x.h)} h × ${fmt(x.v)}</span><span>${fmt(x.m)}</span></div>`).join('')+
     `<div class="line tot"><span>Total ganado</span><span>${fmt(dg.bruto)}</span></div>` : '<p class="muted" style="margin:0">No hay días trabajados en este período.</p>';
@@ -1638,7 +1638,7 @@ function renderMios(){
     if(!trabajadoJ(j)) return `<li style="align-items:flex-start"><span>${fd(j.fecha)}${DIA[j.dia]||''} · ${ESTADO_DIA[j.estado_dia]||''}${j.nota?'<br><span class="muted">'+esc(j.nota)+'</span>':''}</span><b class="muted">—</b></li>`;
     const est=j.estado==='pendiente'?'<span class="tag warn">Esperando aprobación</span>':j.pago_id?'<span class="tag ok">Pagada</span>':'<span class="tag">Por cobrar</span>';
     const det=(j.tramos&&j.tramos.length)?j.tramos.map(tramoTxt).map(esc).join('<br>'):esc(obraN(j.obra_id));
-    return `<li style="align-items:flex-start"><span>${fd(j.fecha)}${DIA[j.dia]||''}<br>${det}<br><span class="muted">${fmtH(horasJ(j))} h${+j.horas_extra?` · ${fmtH(+j.horas_extra)} h extra × ${fmt(jorValorExtra(j))}`:''}${j.vehiculo?' · '+esc(j.vehiculo):''}</span><br>${est}</span><b>${j.estado==='aprobado'?fmt(jorTotal(j)):''}</b></li>`;}).join(''):'<li class="muted">No hay jornadas en este período.</li>';
+    return `<li style="align-items:flex-start"><span>${fd(j.fecha)}${DIA[j.dia]||''}<br>${det}<br><span class="muted">${fmtH(horasJ(j))} h${+j.horas_extra?` · ${fmtH(+j.horas_extra)} h extra × ${fmt(jorValorExtra(j))}`:''}${j.vehiculo?' · '+esc(j.vehiculo):''}</span><br>${est}</span><b>${j.estado==='aprobado'?fmt(jorTotal(j)):''}</b></li>`;}).join(''):'<li class="muted">No hay días laborales en este período.</li>';
   const movs=[...T.adelantos.filter(r=>r.trabajador_id===tid&&enRango(r.fecha)).map(r=>({f:r.fecha,txt:`Adelanto${r.motivo?' ('+esc(r.motivo)+')':''}`,m:+r.monto})),
               ...aCuenta(tid).filter(r=>enRango(r.fecha)).map(r=>({f:r.fecha,txt:`Gasto a tu cuenta (${esc(byId('categorias_gasto',r.categoria_id)?.nombre||'Gasto')}${r.nota?' · '+esc(r.nota):''})`,m:+r.monto})),
               ...psPer.filter(p=> +p.descuento_adelanto).map(p=>({f:String(p.cargado_en).slice(0,10),txt:'Descontado en un pago',m:-p.descuento_adelanto}))].sort((a,b)=>b.f.localeCompare(a.f));
@@ -1739,7 +1739,7 @@ function renderInf(){
   const S=stats(), adm=puede('ver_cobros'), vadel=puede('pagos','cargar_adelantos');
   $('#kpis').innerHTML=(adm?`<div class="kpi">Cobrado<b>${fmt(S.cobros)}</b></div>`:'')+`<div class="kpi">Sueldos<b>${fmt(S.sueldos)}</b></div><div class="kpi">Gastos<b>${fmt(S.gastos)}</b></div>`+(adm?`<div class="kpi">Ganancia<b class="${S.gan>=0?'pos':'neg'}">${fmt(S.gan)}</b></div>`:'');
   const arr=[...S.porTrab].sort((a,b)=>b[cmp]-a[cmp]).map(x=>[x.t.nombre,x[cmp],(cmp==='horas'||cmp==='ext')?x[cmp]+' h':fmt(x[cmp])]);
-  $('#cmpBars').innerHTML=arr.length?barras(arr,cmp==='ext'||cmp==='adel'):'<p class="muted">Sin jornadas en este período.</p>';
+  $('#cmpBars').innerHTML=arr.length?barras(arr,cmp==='ext'||cmp==='adel'):'<p class="muted">Sin días laborales en este período.</p>';
   const CT=colsTrab(vadel);
   $('#cmpTable').innerHTML=`<tr><th>Trabajador</th>${CT.map(([k])=>`<th>${esc(colTrabT(k))}</th>`).join('')}</tr>`+
     S.porTrab.map(x=>`<tr><td>${esc(x.t.nombre)}</td>${CT.map(c=>`<td>${c[2](x)}</td>`).join('')}</tr>`).join('');
@@ -1775,7 +1775,7 @@ $('#docClose').onclick=()=>$('#doc').classList.remove('open');
 $('#csv').onclick=()=>{
   const S=stats(), adm=puede('ver_cobros'), vadel=puede('pagos','cargar_adelantos');
   const xs=[...S.J.map(r=>({r,t:'jornadas'})),...S.G.map(r=>({r,t:'gastos'})),...(adm?S.C.map(r=>({r,t:'cobros'})):[]),...(vadel?S.A.map(r=>({r,t:'adelantos'})):[])].sort((a,b)=>b.r.fecha.localeCompare(a.r.fecha));
-  const nom={jornadas:'Jornada',gastos:'Gasto',cobros:'Cobro',adelantos:'Adelanto'};
+  const nom={jornadas:'Día laboral',gastos:'Gasto',cobros:'Cobro',adelantos:'Adelanto'};
   const cx=cfg('col_xls'), CX=COLS_XLS.filter(([k])=>cx[k]?.on!==false);
   const val={fecha:(r)=>fd(r.fecha),tipo:(r,t)=>nom[t],obra:(r)=>r.obra_id!==undefined?obraN(r.obra_id):'',detalle:(r,t)=>describe(r,t),monto:(r,t)=>Math.round(montoReg(r,t)),quien:(r)=>quien(r.cargado_por)};
   const rows=[CX.map(([k,t])=>cx[k]?.t||t)].concat(xs.map(({r,t})=>CX.map(([k])=>val[k](r,t))));
@@ -1848,12 +1848,12 @@ $$('#te-frec button').forEach(b=>b.onclick=()=>{efrec=b.dataset.f; teCalc();});
 $('#trabNuevo').onclick=()=>abrirTrab(null);
 $('#te-cancel').onclick=()=>$('#trabEdit').classList.add('hide');
 $('#te-save').onclick=async()=>{
-  const v=teVals(); if(!v.nombre) return toast('Poné el nombre'); if(!v.precio_jornada) return toast('Poné el precio de la jornada');
+  const v=teVals(); if(!v.nombre) return toast('Poné el nombre'); if(!v.precio_jornada) return toast('Poné el precio del día laboral');
   if(!await online()) return;
   const q = editId ? sb.from('trabajadores').update(v).eq('id',editId).select().single() : sb.from('trabajadores').insert(v).select().single();
   const {data,error}=await q; if(error) return toast('Error: '+error.message);
   if(editId){ Object.assign(byId('trabajadores',editId),data); } else T.trabajadores.push(data);
-  $('#trabEdit').classList.add('hide'); llenarSelects(); renderEq(); toast('Guardado. Los cambios de precio valen para las jornadas nuevas');
+  $('#trabEdit').classList.add('hide'); llenarSelects(); renderEq(); toast('Guardado. Los cambios de precio valen para los días laborales nuevos');
 };
 $('#aliasOk2').onclick=()=>{ $('#aliasIn').value=$('#aliasIn2').value; $('#aliasOk').onclick(); };
 $('#aliasOk').onclick=async()=>{
@@ -2014,10 +2014,10 @@ $('#te-baja').onclick=async()=>{
   const nJ=T.jornadas.filter(j=>j.trabajador_id===t.id).length, nP=T.pagos.filter(p=>p.trabajador_id===t.id).length,
         nA=T.adelantos.filter(a=>a.trabajador_id===t.id).length;
   const v=await elegir(`Dar de baja a ${t.nombre}`,
-    `Tiene ${nJ} jornada${nJ===1?'':'s'}, ${nP} pago${nP===1?'':'s'} y ${nA} adelanto${nA===1?'':'s'} cargados. ¿Querés guardar sus registros?`,
+    `Tiene ${nJ} ${nJ===1?'día laboral':'días laborales'}, ${nP} pago${nP===1?'':'s'} y ${nA} adelanto${nA===1?'':'s'} cargados. ¿Querés guardar sus registros?`,
     [{t:'Sí, guardar sus registros',v:'guardar'},{t:'No, borrar todos sus registros',v:'borrar',cls:'bad'},{t:'Cancelar',v:null,cls:'ghost'}]);
   if(!v) return;
-  if(v==='borrar' && !confirm(`Se van a borrar para siempre las jornadas, pagos, adelantos, caja y gastos a cuenta de ${t.nombre}. Los gastos de obra que pagó quedan, sin su nombre. Esto no se puede deshacer. ¿Seguro?`)) return;
+  if(v==='borrar' && !confirm(`Se van a borrar para siempre los días laborales, pagos, adelantos, caja y gastos a cuenta de ${t.nombre}. Los gastos de obra que pagó quedan, sin su nombre. Esto no se puede deshacer. ¿Seguro?`)) return;
   if(!await online()) return;
   if(v==='borrar'){
     const fotos=T.gastos.filter(g=>g.a_cuenta_de===t.id&&g.comprobante).map(g=>g.comprobante);
@@ -2058,7 +2058,7 @@ $('#creCambiar').onclick=()=>{ try{ sessionStorage.removeItem('go-elegido'); }ca
 
 /* ===================== Creador: borrar todos los datos de una empresa ===================== */
 async function reiniciarEmpresa(e){
-  const n=prompt(`Esto borra TODO lo cargado por ${e.nombre}: jornadas, gastos y fotos, pagos, adelantos, caja, cobros, trabajadores y obras.\nQuedan la empresa, sus usuarios, categorías y permisos.\nNo se puede deshacer.\n\nPara confirmar, escribí el nombre de la empresa:`);
+  const n=prompt(`Esto borra TODO lo cargado por ${e.nombre}: días laborales, gastos y fotos, pagos, adelantos, caja, cobros, trabajadores y obras.\nQuedan la empresa, sus usuarios, categorías y permisos.\nNo se puede deshacer.\n\nPara confirmar, escribí el nombre de la empresa:`);
   if(n===null) return;
   const norm=x=>String(x||'').trim().toLowerCase();
   if(norm(n)!==norm(e.nombre)) return toast('El nombre no coincide. No se borró nada');
