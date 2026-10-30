@@ -108,7 +108,23 @@ a{color:var(--accent)}
 .paper .kp div{border:1px solid #ddd;border-radius:6px;padding:8px}
 .paper .kp b{display:block;font-size:15px}
 @media (max-width:520px){.paper{padding:18px 14px;margin:10px}.paper .kp{grid-template-columns:1fr 1fr}}
+input[type=date]{min-width:0;max-width:100%;display:block;-webkit-appearance:none;appearance:none;min-height:46px}
+.foto-btns{display:flex;gap:8px}
+.foto-btns button{flex:1;margin-top:0;padding:12px 8px;font-size:15px}
+#fotoPrev{display:flex;align-items:center;gap:10px;margin-top:8px}
+#fotoPrev img{width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+.h2row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px}
+.h2row h2{margin:0}
+.icon-btn{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:8px 10px;font:500 14px system-ui;cursor:pointer;white-space:nowrap}
+.del{border:0;background:none;color:var(--bad);font-size:18px;padding:4px 6px;cursor:pointer}
+.comp-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.comp{border:1px solid #ddd;border-radius:6px;padding:8px;break-inside:avoid;page-break-inside:avoid}
+.comp img{width:100%;max-height:300px;object-fit:contain;background:#f4f4f4;border-radius:4px;display:block}
+.comp .cap{font-size:12px;margin-top:6px;line-height:1.35}
+.comp .cap b{font-size:14px}
+.noprint{margin-top:10px}
 @media print{
+  .noprint{display:none!important}
   body>*:not(#doc){display:none!important}
   #doc{position:static;display:block!important;background:#fff}
   #doc .bar-top{display:none}
@@ -175,6 +191,13 @@ a{color:var(--accent)}
       <button data-t="cobro" data-rol="admin">Cobro</button>
     </div>
 
+    <div id="obraBox">
+      <label>Obra</label>
+      <input id="obraIn" list="obrasList" autocomplete="off" placeholder="Escribí o elegí la obra">
+      <datalist id="obrasList"></datalist>
+      <p class="muted" id="obraAyuda" style="margin:4px 0 0"></p>
+    </div>
+
     <div id="f-gasto">
       <label>Monto ($)</label>
       <input id="g-monto" inputmode="decimal" class="money" placeholder="0">
@@ -184,24 +207,26 @@ a{color:var(--accent)}
         <input id="catNew" placeholder="Ej: Gastos médicos">
         <button id="catOk">Agregar</button>
       </div>
-      <label>Obra</label>
-      <select id="g-obra"></select>
       <label>Fecha</label>
       <input type="date" id="g-fecha">
       <label>Comprobante (foto)</label>
-      <input type="file" accept="image/*" capture="environment" id="g-foto">
+      <div class="foto-btns">
+        <button type="button" class="btn ghost" id="fotoCam">📷 Sacar foto</button>
+        <button type="button" class="btn ghost" id="fotoGal">🖼️ Elegir de la galería</button>
+      </div>
+      <input type="file" accept="image/*" capture="environment" id="g-foto" class="hide">
+      <input type="file" accept="image/*" id="g-fotoGal" class="hide">
+      <div id="fotoPrev" class="hide"><img id="fotoImg" alt="Comprobante"><span class="muted" style="flex:1">Foto lista</span><button type="button" class="icon-btn" id="fotoX">Quitar</button></div>
       <label>Nota (opcional)</label>
       <input id="g-nota" placeholder="Ej: nafta camioneta">
     </div>
 
     <div id="f-jornada" class="hide">
       <div id="j-trabBox"><label>Trabajador</label><select id="j-trab"></select></div>
-      <label>Obra</label>
-      <select id="j-obra"></select>
-      <div class="row">
-        <div><label>Fecha</label><input type="date" id="j-fecha"></div>
-        <div><label>Horas extra</label><input id="j-extra" inputmode="decimal" placeholder="0"></div>
-      </div>
+      <label>Fecha</label>
+      <input type="date" id="j-fecha">
+      <label>Horas extra</label>
+      <input id="j-extra" inputmode="decimal" placeholder="0">
       <label class="check"><input type="checkbox" id="j-fer"> Es feriado</label>
       <p class="muted" id="j-dia"></p>
       <p class="muted" id="j-calc"></p>
@@ -218,8 +243,6 @@ a{color:var(--accent)}
     </div>
 
     <div id="f-cobro" class="hide">
-      <label>Obra</label>
-      <select id="c-obra"></select>
       <label>Tipo de trabajo</label>
       <div class="chips" id="c-tipos"></div>
       <div class="inline-add hide" id="tipoAdd">
@@ -249,8 +272,9 @@ a{color:var(--accent)}
   </div>
 
   <div class="card">
-    <h2>Últimas cargas</h2>
+    <div class="h2row"><h2>Últimas cargas</h2><button class="icon-btn" id="hojaBtn">📄 Comprobantes</button></div>
     <ul class="list" id="ultimas"></ul>
+    <button class="btn ghost hide" id="masBtn">Ver más</button>
   </div>
 </section>
 
@@ -654,7 +678,7 @@ async function sync(){
       }
       const {data,error}=await sb.from(op.tabla).insert(fila).select().single();
       if(error && error.code!=='23505') throw error;
-      const i=T[op.tabla].findIndex(r=>r.id_local===fila.id_local);
+      const i=T[op.tabla].findIndex(r=> fila.id_local ? r.id_local===fila.id_local : r.id===fila.id);
       if(data){ if(i>=0) T[op.tabla][i]=data; else T[op.tabla].push(data); }
       cola.shift(); guardarCola(); subidas++;
     }
@@ -690,12 +714,9 @@ let tipo='gasto', catId=null, cmodo='m2', tipoTrabId=null;
 const catsAct = () => T.categorias_gasto.filter(c=>c.activa!==false).sort((a,b)=>a.nombre.localeCompare(b.nombre));
 const tiposAct = () => T.tipos_trabajo.filter(c=>c.activo!==false);
 function llenarSelects(){
-  const obrasAct=T.obras.filter(o=>o.activa!==false);
-  const oo=obrasAct.map(o=>`<option value="${o.id}">${esc(o.nombre)}</option>`).join('');
-  const keep={}; ['g-obra','j-obra','c-obra','j-trab','a-trab'].forEach(f=>keep[f]=$('#'+f).value);
-  $('#g-obra').innerHTML = oo + '<option value="">General (sin obra)</option>';
-  $('#j-obra').innerHTML = oo || '<option value="">(Cargá una obra en Equipo)</option>';
-  $('#c-obra').innerHTML = oo || '<option value="">(Cargá una obra en Equipo)</option>';
+  $('#obrasList').innerHTML=T.obras.filter(o=>o.activa!==false).map(o=>`<option value="${esc(o.nombre)}">`).join('');
+  if(!$('#obraIn').value) $('#obraIn').value=store.get('go-obra','');
+  const keep={}; ['j-trab','a-trab'].forEach(f=>keep[f]=$('#'+f).value);
   const tt=T.trabajadores.filter(t=>t.activo!==false).map(t=>`<option value="${t.id}">${esc(t.nombre)}</option>`).join('');
   $('#j-trab').innerHTML=tt; $('#a-trab').innerHTML=tt;
   Object.entries(keep).forEach(([f,v])=>{ if(v && [...$('#'+f).options].some(o=>o.value===v)) $('#'+f).value=v; });
@@ -741,6 +762,8 @@ $('#tipoOk').onclick=()=>agregarNombre('tipos_trabajo','#tipoNew','#tipoAdd',id=
 
 function setTipo(t){
   tipo=t; $$('#tipoSeg button').forEach(x=>x.classList.toggle('on',x.dataset.t===t));
+  $('#obraBox').classList.toggle('hide',t==='adelanto');
+  $('#obraIn').placeholder = t==='gasto' ? 'Escribí o elegí la obra (vacío = gasto general)' : 'Escribí o elegí la obra';
   ['gasto','jornada','adelanto','cobro'].forEach(x=>$('#f-'+x).classList.toggle('hide',x!==t)); calcForm();
 }
 $$('#tipoSeg button').forEach(b=>b.onclick=()=>{ setTipo(b.dataset.t); saveDraft(); });
@@ -765,7 +788,7 @@ function calcForm(){
 }
 $('#j-fer').addEventListener('change',calcForm);
 $('#j-fecha').addEventListener('change',()=>{$('#j-fer').checked=false; calcForm();});
-const FIELDS=['g-monto','g-obra','g-fecha','g-nota','j-trab','j-obra','j-fecha','j-extra','a-trab','a-monto','a-nota','c-obra','c-m2','c-pm2','c-horas','c-ph','c-total'];
+const FIELDS=['obraIn','g-monto','g-fecha','g-nota','j-trab','j-fecha','j-extra','a-trab','a-monto','a-nota','c-m2','c-pm2','c-horas','c-ph','c-total'];
 const TEXTF=['g-monto','g-nota','j-extra','a-monto','a-nota','c-m2','c-pm2','c-horas','c-ph','c-total'];
 function saveDraft(){
   const d={tipo,catId,cmodo,tipoTrabId}; let any=false;
@@ -783,6 +806,27 @@ function loadDraft(){
 $('#draftDiscard').onclick=e=>{e.preventDefault(); store.del('go-draft'); TEXTF.forEach(f=>$('#'+f).value=''); $('#draftBox').classList.add('hide'); calcForm();};
 FIELDS.forEach(f=>$('#'+f).addEventListener('input',()=>{calcForm(); saveDraft();}));
 
+// Obra escrita a mano: si no existe, se crea (también sin señal, se sube primero que lo demás)
+function obraExistente(nombre){ const n=nombre.trim().toLowerCase(); return T.obras.find(o=>o.nombre.trim().toLowerCase()===n); }
+function obraIdPara(nombre){
+  const n=String(nombre||'').trim().replace(/\s+/g,' ');
+  if(!n) return null;
+  const ya=obraExistente(n); if(ya) return ya.id;
+  const id=(crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx'.replace(/x/g,()=>(Math.random()*16|0).toString(16)));
+  T.obras.push({id,nombre:n,activa:true,_pend:true});
+  cola.push({tabla:'obras',fila:{id,nombre:n}}); guardarCola();
+  $('#obrasList').insertAdjacentHTML('beforeend',`<option value="${esc(n)}">`);
+  return id;
+}
+$('#obraIn').addEventListener('input',()=>{ const v=$('#obraIn').value.trim(); $('#obraAyuda').textContent = v && !obraExistente(v) ? `Obra nueva: se va a crear "${v}" al guardar.` : ''; });
+// Foto: cámara o galería
+let fotoFile=null;
+function ponerFoto(f){ fotoFile=f||null; $('#fotoPrev').classList.toggle('hide',!fotoFile); if(fotoFile){ $('#fotoImg').src=URL.createObjectURL(fotoFile); } }
+$('#fotoCam').onclick=()=>$('#g-foto').click();
+$('#fotoGal').onclick=()=>$('#g-fotoGal').click();
+$('#g-foto').onchange=e=>ponerFoto(e.target.files[0]);
+$('#g-fotoGal').onchange=e=>ponerFoto(e.target.files[0]);
+$('#fotoX').onclick=()=>{ ponerFoto(null); $('#g-foto').value=''; $('#g-fotoGal').value=''; };
 function comprimir(file){
   return new Promise((res,rej)=>{
     const img=new Image(), url=URL.createObjectURL(file);
@@ -794,23 +838,23 @@ $('#guardar').onclick=async()=>{
   const id_local=uidLocal(); let tabla, fila, foto=null;
   if(tipo==='gasto'){
     const m=num($('#g-monto').value); if(!m) return toast('Poné el monto'); if(!catId) return toast('Elegí una categoría');
-    tabla='gastos'; fila={id_local,obra_id:$('#g-obra').value||null,categoria_id:catId,monto:m,fecha:$('#g-fecha').value||hoyF(),nota:$('#g-nota').value||null,trabajador_id:esTrab()?me.trabajador_id:null};
-    if($('#g-foto').files[0]){ try{ foto=await comprimir($('#g-foto').files[0]); }catch(e){ toast('No se pudo leer la foto'); } }
+    if(fotoFile){ try{ foto=await comprimir(fotoFile); }catch(e){ toast('No se pudo leer la foto'); } }
+    tabla='gastos'; fila={id_local,obra_id:obraIdPara($('#obraIn').value),categoria_id:catId,monto:m,fecha:$('#g-fecha').value||hoyF(),nota:$('#g-nota').value||null,trabajador_id:esTrab()?me.trabajador_id:null};
   }
   if(tipo==='jornada'){
-    const tid=jTrabId(); if(!tid) return toast('Elegí el trabajador'); if(!$('#j-obra').value) return toast('Elegí la obra');
+    const tid=jTrabId(); if(!tid) return toast('Elegí el trabajador'); if(!$('#obraIn').value.trim()) return toast('Escribí la obra');
     const f=$('#j-fecha').value||hoyF();
-    tabla='jornadas'; fila={id_local,trabajador_id:tid,obra_id:$('#j-obra').value,fecha:f,horas_extra:num($('#j-extra').value)};
-    if($('#j-fer').checked) fila.dia='feriado';
     if(T.jornadas.some(j=>j.trabajador_id===tid&&j.fecha===f&&aprobado(j)) && !confirm(`${trabN(tid)} ya tiene una jornada el ${fd(f)}. ¿Cargar otra igual?`)) return;
+    tabla='jornadas'; fila={id_local,trabajador_id:tid,obra_id:obraIdPara($('#obraIn').value),fecha:f,horas_extra:num($('#j-extra').value)};
+    if($('#j-fer').checked) fila.dia='feriado';
   }
   if(tipo==='adelanto'){
     const m=num($('#a-monto').value); if(!m) return toast('Poné el monto');
     tabla='adelantos'; fila={id_local,trabajador_id:$('#a-trab').value,monto:m,fecha:hoyF(),motivo:$('#a-nota').value||null};
   }
   if(tipo==='cobro'){
-    const m=montoCobro(); if(!m) return toast('Completá el cobro'); if(!$('#c-obra').value) return toast('Elegí la obra');
-    tabla='cobros'; fila={id_local,obra_id:$('#c-obra').value,tipo_trabajo_id:tipoTrabId,forma:cmodo,monto:m,fecha:hoyF(),
+    const m=montoCobro(); if(!m) return toast('Completá el cobro'); if(!$('#obraIn').value.trim()) return toast('Escribí la obra');
+    tabla='cobros'; fila={id_local,obra_id:obraIdPara($('#obraIn').value),tipo_trabajo_id:tipoTrabId,forma:cmodo,monto:m,fecha:hoyF(),
       cantidad: cmodo==='m2'?num($('#c-m2').value):cmodo==='hora'?num($('#c-horas').value):null,
       precio_unitario: cmodo==='m2'?num($('#c-pm2').value):cmodo==='hora'?num($('#c-ph').value):null};
   }
@@ -819,8 +863,10 @@ $('#guardar').onclick=async()=>{
   if(tabla==='jornadas') local.dia=fila.dia||tipoDia(fila.fecha);
   T[tabla].push(local);
   cola.push({tabla,fila,foto}); guardarCola();
+  if(foto) local._foto=foto;
   store.del('go-draft'); $('#draftBox').classList.add('hide');
-  TEXTF.forEach(f=>$('#'+f).value=''); $('#g-foto').value=''; $('#j-fer').checked=false;
+  TEXTF.forEach(f=>$('#'+f).value=''); $('#fotoX').click(); $('#j-fer').checked=false; $('#obraAyuda').textContent='';
+  if(tipo!=='adelanto') store.set('go-obra',$('#obraIn').value.trim());
   toast(navigator.onLine?'Guardado':'Guardado en el celular. Se sube cuando vuelva la señal');
   render(); sync();
 };
@@ -841,11 +887,59 @@ async function verFoto(path){
   if(error) return toast('No se pudo abrir la foto');
   window.open(data.signedUrl,'_blank');
 }
+let ultimasN=10;
+$('#masBtn').onclick=()=>{ ultimasN+=20; renderUltimas(); };
 function renderUltimas(){
-  const xs=todos().filter(x=>x.t!=='pagos').sort((a,b)=>String(b.r.cargado_en).localeCompare(String(a.r.cargado_en))).slice(0,10);
-  $('#ultimas').innerHTML = xs.length ? xs.map(({r,t})=>`<li><span>${esc(describe(r,t))}<br><span class="muted">${fd(r.fecha)} · ${esc(quien(r.cargado_por))}${r.comprobante?` · <a href="#" data-foto="${esc(r.comprobante)}">📎 ver</a>`:''}${r._pend?' · <span class="tag warn">sin subir</span>':''}${r.estado==='pendiente'?' · <span class="tag warn">a aprobar</span>':''}${r.estado==='rechazado'?' · <span class="tag">rechazado</span>':''}</span></span><b>${(esTrab()&&t==='jornadas')?'':fmt(montoReg(r,t))}</b></li>`).join('') : '<li class="muted">Todavía no cargaste nada.</li>';
+  const todosX=todos().filter(x=>x.t!=='pagos').sort((a,b)=>String(b.r.cargado_en).localeCompare(String(a.r.cargado_en)));
+  const xs=todosX.slice(0,ultimasN);
+  $('#masBtn').classList.toggle('hide',todosX.length<=ultimasN);
+  $('#ultimas').innerHTML = xs.length ? xs.map(({r,t})=>`<li><span>${esc(describe(r,t))}<br><span class="muted">${fd(r.fecha)} · ${esc(quien(r.cargado_por))}${r.comprobante?` · <a href="#" data-foto="${esc(r.comprobante)}">📎 ver</a>`:''}${r._pend?' · <span class="tag warn">sin subir</span>':''}${r.estado==='pendiente'?' · <span class="tag warn">a aprobar</span>':''}${r.estado==='rechazado'?' · <span class="tag">rechazado</span>':''}</span></span><b>${(esTrab()&&t==='jornadas')?'':fmt(montoReg(r,t))}</b>${esAdmin()?`<button class="del" title="Borrar" data-del="${t}:${esc(r.id||'local:'+r.id_local)}">🗑</button>`:''}</li>`).join('') : '<li class="muted">Todavía no cargaste nada.</li>';
   $$('[data-foto]').forEach(a=>a.onclick=e=>{e.preventDefault(); verFoto(a.dataset.foto);});
+  $$('#ultimas [data-del]').forEach(b=>b.onclick=()=>{ const [t,...rest]=b.dataset.del.split(':'); borrar(t,rest.join(':')); });
 }
+/* Borrar (solo administrador, con confirmación) */
+async function borrar(t,id){
+  if(!esAdmin()) return;
+  const local=id.startsWith('local:'), r=local ? T[t].find(x=>x.id_local===id.slice(6)) : byId(t,id);
+  if(!r) return;
+  if(t==='jornadas' && r.pago_id) return toast('Esta jornada ya está en un pago. Primero borrá ese pago en Pagos.');
+  const extra = t==='pagos' ? '\n\nLas jornadas de este pago vuelven a quedar sin pagar y el descuento de adelantos se anula.' : '';
+  if(!confirm(`¿Borrar esto?\n\n${describe(r,t)}\n${fd(r.fecha||r.cargado_en)} · ${fmt(montoReg(r,t))}${extra}\n\nNo se puede deshacer.`)) return;
+  if(local){
+    cola=cola.filter(op=>op.fila.id_local!==r.id_local); guardarCola();
+    T[t]=T[t].filter(x=>x!==r); render(); return toast('Borrado');
+  }
+  if(!await online()) return;
+  const {error}=await sb.from(t).delete().eq('id',id);
+  if(error) return toast('No se pudo borrar: '+error.message);
+  if(r.comprobante) sb.storage.from('comprobantes').remove([r.comprobante]).catch(()=>{});
+  T[t]=T[t].filter(x=>x.id!==id);
+  if(t==='pagos') T.jornadas.forEach(j=>{ if(j.pago_id===id) j.pago_id=null; });
+  store.set('go-cache',{me,T,en:Date.now()}); render(); toast('Borrado');
+}
+
+/* Hoja de comprobantes de un día */
+let hojaFecha=null;
+$('#hojaBtn').onclick=()=>{ hojaFecha=hojaFecha||hoyF(); armarHoja(); $('#doc').classList.add('open'); $('#doc').scrollTop=0; };
+async function armarHoja(){
+  const gs=T.gastos.filter(g=>g.fecha===hojaFecha && (g.comprobante||g._foto) && g.estado!=='rechazado').sort((a,b)=>String(a.cargado_en).localeCompare(String(b.cargado_en)));
+  const total=gs.reduce((a,g)=>a+ +g.monto,0);
+  $('#paper').innerHTML=`<h1>Comprobantes del ${fd(hojaFecha)}</h1>
+    <div class="sub">${gs.length} comprobante${gs.length===1?'':'s'} · Total ${fmt(total)} · Generado por ${esc(me.nombre)}</div>
+    <div class="noprint"><label style="color:#555">Elegí el día</label><input type="date" id="hojaDia" value="${hojaFecha}" style="max-width:220px;background:#fff;color:#111"></div>
+    ${gs.length?'':'<p class="sub" style="margin-top:16px">No hay gastos con foto ese día.</p>'}
+    <div class="comp-grid">${gs.map((g,i)=>`<div class="comp"><img data-i="${i}" alt="Comprobante"><div class="cap"><b>${fmt(g.monto)}</b> · ${esc(byId('categorias_gasto',g.categoria_id)?.nombre||'Gasto')}<br>${esc(obraN(g.obra_id))}${g.nota?' · '+esc(g.nota):''}<br><span style="color:#666">${esc(quien(g.cargado_por))}</span></div></div>`).join('')}</div>`;
+  $('#hojaDia').onchange=e=>{ hojaFecha=e.target.value||hoyF(); armarHoja(); };
+  const imgs=$$('#paper img[data-i]');
+  gs.forEach((g,i)=>{ if(g._foto) imgs[i].src=g._foto; });
+  const paths=gs.filter(g=>g.comprobante&&!g._foto).map(g=>g.comprobante);
+  if(paths.length && navigator.onLine && sb){
+    const {data}=await sb.storage.from('comprobantes').createSignedUrls(paths,3600);
+    (data||[]).forEach(d=>{ const i=gs.findIndex(g=>g.comprobante===d.path); if(i>=0 && d.signedUrl) imgs[i].src=d.signedUrl; });
+  } else if(paths.length) toast('Sin señal: algunas fotos no se pueden mostrar');
+}
+function fotosCargadas(){ return Promise.all($$('#paper img').map(im=>im.complete&&im.src?Promise.resolve():new Promise(r=>{im.onload=im.onerror=r; setTimeout(r,8000);}))); }
+
 function renderPend(){
   if(!esAdmin()){ $('#pendCard').classList.add('hide'); return; }
   const xs=[...T.jornadas.map(r=>({r,t:'jornadas'})),...T.gastos.map(r=>({r,t:'gastos'}))].filter(x=>x.r.estado==='pendiente');
@@ -887,7 +981,8 @@ function renderPagos(){
     const s=saldoAdel(t.id);
     return `<li style="align-items:flex-start"><span><b>${esc(t.nombre)}</b><br><span class="muted">${movs.length?movs.map(m=>m.txt).join('<br>'):'Sin movimientos'}</span></span><b class="${s>0?'neg':''}">${fmt(s)}</b></li>`;}).join('');
   const ps=[...T.pagos].sort((a,b)=>String(b.cargado_en).localeCompare(String(a.cargado_en)));
-  $('#histList').innerHTML=ps.length?ps.map(p=>`<li style="align-items:flex-start"><span><b>${esc(trabN(p.trabajador_id))}</b> · ${fmt(+p.bruto - +p.descuento_adelanto)}<br><span class="muted">${fd(p.desde)} al ${fd(p.hasta)} · enviado ${fdh(p.cargado_en)}${p.estado==='confirmado'?`<br>Recibido confirmado el ${fdh(p.confirmado_en)}`:''}</span></span><span class="tag ${p.estado==='confirmado'?'ok':'warn'}">${p.estado==='confirmado'?'✔ Recibido':'Esperando'}</span></li>`).join(''):'<li class="muted">Todavía no hay pagos.</li>';
+  $('#histList').innerHTML=ps.length?ps.map(p=>`<li style="align-items:flex-start"><span><b>${esc(trabN(p.trabajador_id))}</b> · ${fmt(+p.bruto - +p.descuento_adelanto)}<br><span class="muted">${fd(p.desde)} al ${fd(p.hasta)} · enviado ${fdh(p.cargado_en)}${p.estado==='confirmado'?`<br>Recibido confirmado el ${fdh(p.confirmado_en)}`:''}</span></span><span class="tag ${p.estado==='confirmado'?'ok':'warn'}">${p.estado==='confirmado'?'✔ Recibido':'Esperando'}</span><button class="del" title="Borrar" data-delpago="${p.id}">🗑</button></li>`).join(''):'<li class="muted">Todavía no hay pagos.</li>';
+  $$('[data-delpago]').forEach(b=>b.onclick=()=>borrar('pagos',b.dataset.delpago));
 }
 $('#histReload').onclick=async()=>{ if(!await online()) return; try{ T.pagos=await fetchAll('pagos'); renderPagos(); toast('Actualizado'); }catch(e){ toast('Error: '+e.message); } };
 function openLiq(tid){
@@ -1016,7 +1111,7 @@ function buildDoc(){
 }
 $('#verDoc').onclick=()=>{ buildDoc(); $('#doc').classList.add('open'); $('#doc').scrollTop=0; };
 $('#pdf').onclick=()=>{ buildDoc(); $('#doc').classList.add('open'); setTimeout(()=>window.print(),200); };
-$('#docPdf').onclick=()=>window.print();
+$('#docPdf').onclick=async()=>{ await fotosCargadas(); window.print(); };
 $('#docClose').onclick=()=>$('#doc').classList.remove('open');
 $('#csv').onclick=()=>{
   const S=stats(), adm=esAdmin();
