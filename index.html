@@ -440,6 +440,12 @@ dialog#dlg h2{margin:0 0 8px}
 <!-- MI DETALLE (lo de cada trabajador) -->
 <section id="v-mios" class="hide">
   <div class="note hide" id="sinFicha"></div>
+  <div class="card hide" id="mioVacio" style="text-align:center">
+    <h2>Aún no hay trabajadores cargados</h2>
+    <p class="muted">¿Querés cargar uno?</p>
+    <button class="btn" id="mioCargarTrab">Cargar trabajador</button>
+  </div>
+  <div class="card hide" id="mioVerBox"><label style="margin-top:0">Ver el detalle de</label><select id="mioVer"></select></div>
   <div id="mioBox">
   <div class="card">
     <h2 id="mioTit">Mi detalle</h2>
@@ -998,7 +1004,7 @@ function aplicarRol(){
   if(me.creador) $('#creTxt').innerHTML = viendo ? `Estás en <b>${esc(me.empresa.nombre)}</b>` : 'Estás en el <b>Panel general</b>';
   // "Mi detalle" se ve si tiene ficha de trabajador, o si no tiene ninguna otra pantalla
   const otras = ['cargar','pagos','inf','eq','panel'].some(v=>!$(`#nav [data-v="${v}"]`).classList.contains('hide'));
-  $('#nav [data-v="mios"]').classList.toggle('hide', !me.trabajador_id && otras);
+  $('#nav [data-v="mios"]').classList.toggle('hide', !me.trabajador_id && otras && !veOtros());
   $('#nav').classList.toggle('hide', $$('#nav button').filter(b=>!b.classList.contains('hide')).length<2);
 }
 const vistaInicial = () => ['cargar','mios','pagos','inf','eq','panel'].find(v=>!$(`#nav [data-v="${v}"]`).classList.contains('hide')) || 'mios';
@@ -1576,9 +1582,28 @@ function mioRango(){
   let a=$('#mioDesde').value||hoyF().slice(0,8)+'01', b=$('#mioHasta').value||hoyF(); if(a>b) [a,b]=[b,a];
   $('#mioDesde').value=a; $('#mioHasta').value=b; return [a,b,`Del ${fd(a)} al ${fd(b)}`];
 }
+// Quien maneja trabajadores puede ver el detalle de cualquiera
+const veOtros = () => !!me?.empresa && (esAdmin() || puede('pagos','ver_informes'));
+let mioSel=null;
+function mioTid(){
+  if(!veOtros()) return me.trabajador_id;
+  const ts=T.trabajadores;
+  if(!ts.some(t=>t.id===mioSel)) mioSel = (ts.some(t=>t.id===me.trabajador_id) ? me.trabajador_id : (ts.find(t=>t.activo!==false)||ts[0])?.id) || null;
+  return mioSel;
+}
+$('#mioVer').onchange=()=>{ mioSel=$('#mioVer').value; renderMios(); };
+$('#mioCargarTrab').onclick=()=>{ irA('eq'); render(); abrirTrab(null); };
 function renderMios(){
-  const tid=me.trabajador_id, ficha=tid&&byId('trabajadores',tid);
-  $('#sinFicha').classList.toggle('hide',!!tid);
+  const otros=veOtros(), tid=mioTid(), ficha=tid&&byId('trabajadores',tid);
+  $('#mioVacio').classList.toggle('hide',!(otros&&!T.trabajadores.length));
+  $('#mioCargarTrab').classList.toggle('hide',!esAdmin());
+  $('#mioVerBox').classList.toggle('hide',!(otros&&T.trabajadores.length));
+  if(otros && T.trabajadores.length){
+    const sel=$('#mioVer'), html=T.trabajadores.map(t=>`<option value="${t.id}">${esc(t.nombre)}${t.id===me.trabajador_id?' (vos)':''}${t.activo===false?' (dado de baja)':''}</option>`).join('');
+    if(sel.dataset.h!==html){ sel.innerHTML=html; sel.dataset.h=html; }
+    sel.value=tid;
+  }
+  $('#sinFicha').classList.toggle('hide',!!tid||otros);
   $('#sinFicha').textContent = 'Tu usuario todavía no está vinculado a tu ficha de trabajador. Pedile al administrador que lo vincule (o que cargue tu teléfono en tu ficha).';
   $('#mioBox').classList.toggle('hide',!tid);
   if(!tid) return;
