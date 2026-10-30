@@ -1,7 +1,7 @@
 {
   "name": "Clarita la Cuenta",
   "short_name": "Clarita",
-  "description": "Gastos, jornadas y pagos de obra. App creada por BR Soluciones.",
+  "description": "Gastos, días laborales y pagos de obra. App creada por BR Soluciones.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
