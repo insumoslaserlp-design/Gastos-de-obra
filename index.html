@@ -40,6 +40,7 @@ header h1 .lc{color:var(--accent)}
 .brand-logo{display:block;width:min(230px,62vw);height:auto;margin:0 auto 6px;filter:drop-shadow(0 6px 14px rgba(1,85,49,.18))}
 .firma{text-align:center;font-size:12px;color:var(--muted);margin:18px 0 0}
 .firma b{color:var(--brand);font-weight:600}
+.firma a{text-decoration:none}
 #s-login{background:radial-gradient(120% 60% at 50% 0%,var(--brand-soft),transparent 70%)}
 .pill{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap;background:none;font-family:inherit}
 .pill.off{color:var(--warn);border-color:var(--warn)}
@@ -531,6 +532,7 @@ input[type=date]{min-width:0;max-width:100%;display:block;-webkit-appearance:non
       <div><label>Firma de abajo</label><input data-cfg="firma_texto"></div>
       <div><label>Marca (en negrita)</label><input data-cfg="firma_marca"></div>
     </div>
+    <label>Al tocar la marca, abrir (un WhatsApp como 5493411234567 o una página web; vacío = no abre nada)</label><input data-cfg="firma_link" inputmode="url" placeholder="5493411234567 o https://...">
   </div>
   <div class="card">
     <h2>Mensaje de pago por WhatsApp</h2>
@@ -590,7 +592,7 @@ const COLS_TRAB = [['dias','Días',x=>x.dias],['horas','Horas',x=>x.horas],['ext
 const COLS_XLS = [['fecha','Fecha'],['tipo','Tipo'],['obra','Obra'],['detalle','Detalle'],['monto','Monto'],['quien','Cargado por']];
 const CFG0 = {
   app_nombre:'Clarita la Cuenta', slogan:'Gastos, jornadas y pagos, siempre en claro',
-  firma_texto:'App creada por', firma_marca:'BR Soluciones',
+  firma_texto:'App creada por', firma_marca:'BR Soluciones', firma_link:'',
   wa_titulo:'LIQUIDACIÓN DE PAGO', wa_confirmar:'Por favor, confirme la recepción del pago en este enlace:',
   wa_firma:'Instalaciones de aberturas', confirmado_titulo:'✔ Pago confirmado',
   nav_cargar:'Cargar', nav_mios:'Mi detalle', nav_pagos:'Pagos', nav_inf:'Informes', nav_eq:'Equipo',
@@ -618,13 +620,23 @@ async function cargarCfg(){
     store.set('go-cfg',o); CFG=mezclarCfg(o); aplicarTextos();
   }catch(e){ console.warn('sin textos del servidor',e); }
 }
+/* La marca de abajo abre un WhatsApp (si es un número) o una página web */
+function linkFirma(){
+  const v=String(cfg('firma_link')||'').trim();
+  if(!v) return '';
+  const tel=v.replace(/[\s()+-]/g,'');
+  if(/^\d{8,15}$/.test(tel)) return `https://wa.me/${tel}?text=${encodeURIComponent('Hola! Vi la app '+(cfg('app_nombre')||'')+' y quiero más información')}`;
+  const u=/^https?:\/\//i.test(v)?v:'https://'+v;
+  try{ const x=new URL(u); return /^https?:$/.test(x.protocol)?x.href:''; }catch{ return ''; }
+}
 function aplicarTextos(){
   const n=cfg('app_nombre').trim()||CFG0.app_nombre, i=n.indexOf(' ');
   document.title=n;
   $('#hdrName').innerHTML = i>0 ? `${esc(n.slice(0,i))} <span class="lc">${esc(n.slice(i+1))}</span>` : esc(n);
   $$('.brand-logo').forEach(im=>im.alt=n);
   $('#loginSlogan').textContent=cfg('slogan');
-  $$('.firma').forEach(p=>p.innerHTML=`${esc(cfg('firma_texto'))} <b>${esc(cfg('firma_marca'))}</b>`);
+  const fl=linkFirma(), fm=`<b>${esc(cfg('firma_marca'))}</b>`;
+  $$('.firma').forEach(p=>p.innerHTML=`${esc(cfg('firma_texto'))} ${fl?`<a href="${esc(fl)}" target="_blank" rel="noopener">${fm}</a>`:fm}`);
   ['cargar','mios','pagos','inf','eq'].forEach(v=>{ const b=$(`#nav [data-v="${v}"]`); const tn=[...b.childNodes].reverse().find(x=>x.nodeType===3); if(tn) tn.textContent=cfg('nav_'+v); });
 }
 const colsTrab = vadel => COLS_TRAB.filter(([k,,,a])=>cfg('col_trab')[k]?.on!==false && (!a||vadel));
