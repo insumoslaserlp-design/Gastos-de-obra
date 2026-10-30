@@ -1,6 +1,6 @@
 // Guarda la app en el celular para que abra sin señal.
-const CACHE = 'clarita-v2';
-const ARCHIVOS = ['./', './index.html', './manifest.json', './logo.png', './favicon.png', './icon-192.png', './icon-512.png',
+const CACHE = 'clarita-v3';
+const ARCHIVOS = ['./', './index.html', './404.html', './manifest.json', './logo.png', './favicon.png', './icon-192.png', './icon-512.png',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ARCHIVOS)).then(() => self.skipWaiting()));

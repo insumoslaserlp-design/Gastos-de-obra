@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clarita la Cuenta</title>
+<style>body{margin:0;background:#f7f6ec;font:16px system-ui,sans-serif;color:#14201a;display:flex;align-items:center;justify-content:center;min-height:100vh}</style>
+<script>
+// Enlace de empresa: claritalacuenta.com.ar/<empresa> → abre la app con esa empresa
+(function(){
+  var p = location.pathname, base = p.indexOf('/Gastos-de-obra/') === 0 ? '/Gastos-de-obra/' : '/';
+  var slug = decodeURIComponent(p.slice(base.length).split('/')[0] || '').toLowerCase();
+  location.replace(base + (/^[a-z0-9][a-z0-9-]{2,39}$/.test(slug) ? '?e=' + slug : ''));
+})();
+</script></head>
+<body><p>Abriendo Clarita la Cuenta…</p></body></html>
