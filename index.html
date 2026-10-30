@@ -3,30 +3,41 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b6bcb">
+<meta name="theme-color" content="#015531">
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="icon.svg">
-<link rel="apple-touch-icon" href="icon.svg">
-<title>Gastos de Obra</title>
+<link rel="icon" href="favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+<title>Clarita la Cuenta</title>
 <style>
 :root{
-  --bg:#f4f5f7; --card:#ffffff; --ink:#1b1f24; --muted:#636b75; --line:#e2e5ea;
-  --accent:#0b6bcb; --accent-ink:#ffffff; --ok:#1a7f4b; --warn:#b26a00; --bad:#c0392b; --wa:#1fa855; --bar2:#8a6fd1;
+  --bg:#f7f6ec; --card:#ffffff; --ink:#14201a; --muted:#5e6b62; --line:#e3e6d8;
+  --accent:#0f6b3a; --accent-ink:#ffffff; --ok:#1a7f4b; --warn:#a86a00; --bad:#c0392b; --wa:#1fa855; --bar2:#e0a800;
+  --brand:#015531; --brand-soft:#e3f3cf; --gold:#f5b81c;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#121417; --card:#1c2025; --ink:#eef0f3; --muted:#9aa3ad; --line:#2c3138;
-    --accent:#4c9cf0; --accent-ink:#0b1320; --ok:#3fbf7f; --warn:#e0a03c; --bad:#ef6b5b; --wa:#2fc56a; --bar2:#a990ec;
+    --bg:#0f1612; --card:#18211b; --ink:#eef3ea; --muted:#9db0a2; --line:#2a362d;
+    --accent:#7ccf6b; --accent-ink:#08200f; --ok:#3fbf7f; --warn:#e0a03c; --bad:#ef6b5b; --wa:#2fc56a; --bar2:#f0c341;
+    --brand:#9fdc8a; --brand-soft:#1d2e20; --gold:#f5c542;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#121417; --card:#1c2025; --ink:#eef0f3; --muted:#9aa3ad; --line:#2c3138;
-  --accent:#4c9cf0; --accent-ink:#0b1320; --ok:#3fbf7f; --warn:#e0a03c; --bad:#ef6b5b; --wa:#2fc56a; --bar2:#a990ec;
+  --bg:#0f1612; --card:#18211b; --ink:#eef3ea; --muted:#9db0a2; --line:#2a362d;
+  --accent:#7ccf6b; --accent-ink:#08200f; --ok:#3fbf7f; --warn:#e0a03c; --bad:#ef6b5b; --wa:#2fc56a; --bar2:#f0c341;
+  --brand:#9fdc8a; --brand-soft:#1d2e20; --gold:#f5c542;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px}
-header h1{font-size:18px;margin:0}
+header h1{font:700 19px/1 Fredoka,system-ui,sans-serif;margin:0;color:var(--brand);display:flex;align-items:center;gap:8px;min-width:0}
+header h1 img{width:34px;height:34px;flex:0 0 auto}
+.brand-logo{display:block;width:min(230px,62vw);height:auto;margin:0 auto 6px;filter:drop-shadow(0 6px 14px rgba(1,85,49,.18))}
+.firma{text-align:center;font-size:12px;color:var(--muted);margin:18px 0 0}
+.firma b{color:var(--brand);font-weight:600}
+#s-login{background:radial-gradient(120% 60% at 50% 0%,var(--brand-soft),transparent 70%)}
 .pill{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap;background:none;font-family:inherit}
 .pill.off{color:var(--warn);border-color:var(--warn)}
 main{max-width:620px;margin:0 auto;padding:16px 16px 96px}
@@ -138,16 +149,18 @@ input[type=date]{min-width:0;max-width:100%;display:block;-webkit-appearance:non
 
 <!-- ======= Pantalla de confirmación de pago (enlace de WhatsApp) ======= -->
 <div id="s-confirmar" class="center hide">
+  <img class="brand-logo" src="logo.png" alt="Clarita la Cuenta" width="230" height="231" style="width:min(160px,45vw)">
   <div class="card" style="text-align:center">
     <h2 id="cf-title">Confirmando pago…</h2>
     <p id="cf-body" class="muted"></p>
   </div>
+  <p class="firma">App creada por <b>BR Soluciones</b></p>
 </div>
 
 <!-- ======= Entrar / crear cuenta ======= -->
 <div id="s-login" class="center hide">
-  <h1 style="font-size:24px;margin:0 0 4px">Gastos de Obra</h1>
-  <p class="muted" style="margin:0 0 16px">Registro de gastos, jornadas y pagos</p>
+  <img class="brand-logo" src="logo.png" alt="Clarita la Cuenta" width="230" height="231">
+  <p class="muted" style="margin:0 0 16px;text-align:center">Gastos, jornadas y pagos, siempre en claro</p>
   <div class="card">
     <div class="seg" id="lgSeg">
       <button data-m="in" class="on">Entrar</button>
@@ -162,12 +175,13 @@ input[type=date]{min-width:0;max-width:100%;display:block;-webkit-appearance:non
     <button class="btn" id="lg-go">Entrar</button>
     <p class="err" id="lg-err"></p>
   </div>
+  <p class="firma">App creada por <b>BR Soluciones</b></p>
 </div>
 
 <!-- ======= App ======= -->
 <div id="s-app" class="hide">
 <header>
-  <h1>Gastos de Obra</h1>
+  <h1><img src="favicon.png" alt="">Clarita</h1>
   <div style="display:flex;gap:6px;flex:0 0 auto">
     <button class="pill" id="who" title="Salir"></button>
     <span class="pill" id="net">En línea</span>
@@ -448,6 +462,7 @@ input[type=date]{min-width:0;max-width:100%;display:block;-webkit-appearance:non
     <p class="muted">Tocá uno para desactivarlo. Se agregan desde Cargar → Cobro.</p>
   </div>
 </section>
+<p class="firma">App creada por <b>BR Soluciones</b></p>
 </main>
 
 <nav id="nav">
