@@ -149,6 +149,11 @@ input[type=date]{min-width:0;max-width:100%;display:block;-webkit-appearance:non
 .pn-col{display:flex;align-items:center;gap:10px;margin-top:8px}
 .pn-col input[type=checkbox]{width:22px;height:22px;flex:0 0 auto}
 .pn-col input[type=text]{flex:1}
+.slug-row{display:flex;align-items:center;gap:4px}
+.slug-row span{font-size:13px;white-space:nowrap}
+.slug-row input{flex:1;min-width:0}
+.emp-acc{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.emp-acc button{font-size:13px;padding:6px 10px}
 </style>
 </head>
 <body>
@@ -163,10 +168,22 @@ input[type=date]{min-width:0;max-width:100%;display:block;-webkit-appearance:non
   <p class="firma">App creada por <b>BR Soluciones</b></p>
 </div>
 
+<!-- ======= Empresa pausada o vencida ======= -->
+<div id="s-pausa" class="center hide">
+  <img class="brand-logo" src="logo.png" alt="Clarita la Cuenta" width="230" height="231" style="width:min(160px,45vw)">
+  <div class="card" style="text-align:center">
+    <h2 id="pausaTit">Cuenta pausada</h2>
+    <p class="muted" id="pausaTxt"></p>
+    <button class="btn ghost" id="pausaSalir">Salir</button>
+  </div>
+  <p class="firma">App creada por <b>BR Soluciones</b></p>
+</div>
+
 <!-- ======= Entrar / crear cuenta ======= -->
 <div id="s-login" class="center hide">
   <img class="brand-logo" src="logo.png" alt="Clarita la Cuenta" width="230" height="231">
   <p class="muted" id="loginSlogan" style="margin:0 0 16px;text-align:center">Gastos, jornadas y pagos, siempre en claro</p>
+  <div class="note hide" id="lgEmpresa"></div>
   <div class="card">
     <div class="seg" id="lgSeg">
       <button data-m="in" class="on">Entrar</button>
@@ -441,6 +458,14 @@ input[type=date]{min-width:0;max-width:100%;display:block;-webkit-appearance:non
     <ul class="list" id="obraList"></ul>
     <div class="inline-add"><input id="obraNew" placeholder="Nombre de la obra"><button id="obraOk">Agregar</button></div>
   </div>
+  <div class="card" id="miEmpresaCard">
+    <h2 id="meNombre">Mi empresa</h2>
+    <label>Enlace para que tus trabajadores creen su cuenta</label>
+    <div class="inline-add"><input id="meLink" readonly><button id="meCopiar">Copiar</button></div>
+    <button class="btn ghost" id="meWa">Mandar el enlace por WhatsApp</button>
+    <label>Firma del mensaje de pago por WhatsApp</label>
+    <div class="inline-add"><input id="meFirma" placeholder="Ej: Instalaciones de aberturas"><button id="meFirmaOk">Guardar</button></div>
+  </div>
   <div class="card hide" id="aliasCard">
     <h2>Tu usuario de administrador general</h2>
     <p class="muted" style="margin-top:-6px">Además de tu teléfono, podés entrar con este usuario. Solo vos lo podés tener.</p>
@@ -472,6 +497,33 @@ input[type=date]{min-width:0;max-width:100%;display:block;-webkit-appearance:non
 <section id="v-panel" class="hide">
   <div class="note">Panel del creador de la app. Lo que cambies acá lo ven todos los usuarios.</div>
   <div class="card">
+    <h2>Empresas</h2>
+    <ul class="list" id="pnEmpList"><li class="muted">Cargando…</li></ul>
+    <button class="btn ghost" id="pnEmpNueva">+ Nueva empresa</button>
+  </div>
+  <div class="card hide" id="pnEmpForm">
+    <h2 id="pnEmpTit">Nueva empresa</h2>
+    <label>Nombre de la empresa</label><input id="pe-nombre" placeholder="Ej: Gerardo Electricidad">
+    <label>Enlace</label>
+    <div class="slug-row"><span class="muted" id="pe-base"></span><input id="pe-slug" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="gerardoelect"></div>
+    <p class="muted" style="margin:4px 0 0">Solo letras minúsculas, números y guiones. Si lo cambiás, el enlace anterior deja de andar.</p>
+    <label>Teléfono del dueño (entra como administrador)</label><input id="pe-tel" inputmode="tel" placeholder="3411234567">
+    <div id="pe-diasBox">
+      <label>Tiempo de uso</label>
+      <div class="chips" id="pe-dias">
+        <button data-d="0" class="on">Sin vencimiento</button><button data-d="30">30 días</button><button data-d="60">60</button><button data-d="90">90</button><button data-d="180">180</button><button data-d="365">365</button>
+      </div>
+      <div class="inline-add" style="margin-top:8px"><input id="pe-diasX" inputmode="numeric" placeholder="Otra cantidad de días"></div>
+    </div>
+    <button class="btn" id="pe-save">Crear empresa</button>
+    <button class="btn ghost" id="pe-cancel">Cancelar</button>
+  </div>
+  <div class="card">
+    <h2>Tu usuario escrito</h2>
+    <p class="muted" style="margin-top:-6px">Además de tu teléfono, podés entrar con este usuario.</p>
+    <div class="inline-add"><input id="aliasIn2" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Ej: bautista"><button id="aliasOk2">Guardar</button></div>
+  </div>
+  <div class="card">
     <h2>Marca</h2>
     <label>Nombre de la app</label><input data-cfg="app_nombre">
     <label>Slogan (pantalla de entrar)</label><input data-cfg="slogan">
@@ -484,7 +536,7 @@ input[type=date]{min-width:0;max-width:100%;display:block;-webkit-appearance:non
     <h2>Mensaje de pago por WhatsApp</h2>
     <label>Título</label><input data-cfg="wa_titulo">
     <label>Pedido de confirmación</label><input data-cfg="wa_confirmar">
-    <label>Firma (va después del nombre de quien paga)</label><input data-cfg="wa_firma">
+    <label>Firma por defecto (si la empresa no puso la suya)</label><input data-cfg="wa_firma">
     <label>Título cuando el trabajador confirma</label><input data-cfg="confirmado_titulo">
   </div>
   <div class="card">
@@ -624,7 +676,7 @@ const store = {
   del(k){ try{ localStorage.removeItem(k); }catch(e){} }
 };
 let toastT; function toast(t){ const el=$('#toast'); el.textContent=t; el.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),2600); }
-function show(id){ ['s-confirmar','s-login','s-app'].forEach(s=>$('#'+s).classList.toggle('hide',s!==id)); }
+function show(id){ ['s-confirmar','s-login','s-app','s-pausa'].forEach(s=>$('#'+s).classList.toggle('hide',s!==id)); }
 function lunes(){ const d=new Date(); d.setDate(d.getDate()-((d.getDay()+6)%7)); return iso(d); }
 const APP_URL = location.href.split(/[?#]/)[0];
 
@@ -670,6 +722,18 @@ async function pantallaConfirmar(cod){
 }
 
 /* ===================== Login ===================== */
+// Si se entró por el enlace de una empresa, se muestra su nombre y la cuenta nueva se crea ahí.
+async function mostrarEmpresaLogin(){
+  const slug=store.get('go-empresa',null), box=$('#lgEmpresa');
+  if(!slug){ box.classList.add('hide'); return; }
+  box.classList.remove('hide'); box.innerHTML=`Empresa: <b>${esc(slug)}</b>`;
+  if(!sb || !navigator.onLine) return;
+  const {data}=await sb.rpc('empresa_publica',{p_slug:slug});
+  const e=data&&data[0];
+  box.innerHTML = !e ? `El enlace <b>${esc(slug)}</b> no corresponde a ninguna empresa. Pedile el enlace correcto a tu empresa. <a href="#" id="lgEmpOtra">Quitar</a>`
+    : `Empresa: <b>${esc(e.nombre)}</b>${e.activa?'':' (pausada)'} · <a href="#" id="lgEmpOtra">No es la mía</a>`;
+  $('#lgEmpOtra').onclick=ev=>{ ev.preventDefault(); store.del('go-empresa'); mostrarEmpresaLogin(); };
+}
 // Se puede entrar con un usuario (sin @): por dentro se guarda como un correo interno.
 const DOMINIO_USUARIOS = 'usuarios.gastosdeobra.local';
 // Teléfono argentino → 10 números (código de área + número). null si no parece un teléfono.
@@ -709,7 +773,8 @@ $('#lg-go').onclick=async()=>{
       const nombre=$('#lg-nombre').value.trim(), tel=tel10(usuario);
       if(!nombre) return $('#lg-err').textContent='Poné tu nombre.';
       if(!tel) return $('#lg-err').textContent='Escribí tu teléfono con código de área, sin 0 ni 15. Ej: 3411234567';
-      const {data,error}=await sb.auth.signUp({email:telEmail(tel),password,options:{data:{nombre,telefono:tel}}});
+      const empresa=store.get('go-empresa',null);
+      const {data,error}=await sb.auth.signUp({email:telEmail(tel),password,options:{data:{nombre,telefono:tel,...(empresa?{empresa}:{})}}});
       if(error) throw error;
       if(!data.session){ $$('#lgSeg button')[0].click(); $('#lg-err').style.color='var(--ok)'; $('#lg-err').textContent='Cuenta creada. Ya podés entrar.'; return; }
     } else {
@@ -724,9 +789,11 @@ $('#lg-go').onclick=async()=>{
     : (m==='alias' || /Invalid login/i.test(m)) ? 'Teléfono, usuario o contraseña incorrectos.'
     : /already|registered|exists/i.test(m) ? 'Ese teléfono ya tiene una cuenta. Tocá "Entrar".'
     : /confirm/i.test(m) ? 'La cuenta todavía no está activada. Avisale al administrador.'
+    : /database error|enlace|pausada/i.test(m) ? (store.get('go-empresa',null) ? 'No se pudo crear la cuenta: esa empresa no existe o está pausada. Pedile el enlace de nuevo a tu empresa.' : 'Para crear tu cuenta usá el enlace que te pasó tu empresa.')
     : 'Error: '+m; }
   finally{ $('#lg-go').disabled=false; }
 };
+$('#pausaSalir').onclick=()=>cerrarSesion(true);
 $('#who').onclick=async()=>{ if(!confirm('¿Cerrar sesión?')) return; if(cola.length && !confirm('Hay cargas sin subir. Si salís ahora se pierden. ¿Salir igual?')) return; await cerrarSesion(true); };
 async function cerrarSesion(borrarCola){
   try{ await sb?.auth.signOut(); }catch(e){}
@@ -766,6 +833,8 @@ async function cargarDatos(){
     const { data:perf, error:pe } = await sb.from('perfiles').select('*').eq('id',user.id).maybeSingle();
     if(pe) throw pe;
     me = perf || { id:user.id, nombre:user.email, rol:'trabajador' };
+    const { data:emp } = await sb.rpc('mi_empresa_estado');
+    me.empresa = (emp&&emp[0]) || null;
     const lista = TABLAS.concat(esAdmin()?['perfiles']:[]);
     const res = await Promise.all(lista.map(t=>fetchAll(t).catch(()=>T[t]||[])));
     lista.forEach((t,i)=>T[t]=res[i]);
@@ -777,6 +846,11 @@ async function iniciar(){
   await cargarDatos();
   if(!me){ show('s-login'); return; }
   if(await vencioAdmin()) return;
+  if(me.empresa && !me.empresa.activa){
+    $('#pausaTit').textContent = me.empresa.nombre;
+    $('#pausaTxt').textContent = `La cuenta de tu empresa está pausada o venció. Comunicate con ${cfg('firma_marca')} para reactivarla.`;
+    show('s-pausa'); return;
+  }
   aplicarRol(); irA(vistaInicial()); llenarSelects(); setTipo(tipoInicial()); loadDraft(); render(); sync();
 }
 function irA(v){
@@ -784,15 +858,16 @@ function irA(v){
   ['cargar','pagos','mios','inf','eq','panel'].forEach(x=>$('#v-'+x).classList.toggle('hide',x!==v));
 }
 function aplicarRol(){
-  $('#who').textContent = `${me.nombre} · ${ROL_TXT[me.rol]||me.rol}`;
+  $('#who').textContent = `${me.nombre} · ${!me.empresa_id&&me.creador?'Creador':(ROL_TXT[me.rol]||me.rol)}`;
   $$('[data-perm]').forEach(el=>el.classList.toggle('hide', !puede(...el.dataset.perm.split(' '))));
   $('#nav [data-v="panel"]').classList.toggle('hide', !me.creador);
+  if(!me.empresa_id) $$('#nav button').forEach(b=>b.classList.toggle('hide', b.dataset.v!=='panel'));
   // "Mi detalle" se ve si tiene ficha de trabajador, o si no tiene ninguna otra pantalla
-  const otras = ['cargar','pagos','inf','eq'].some(v=>!$(`#nav [data-v="${v}"]`).classList.contains('hide'));
+  const otras = ['cargar','pagos','inf','eq','panel'].some(v=>!$(`#nav [data-v="${v}"]`).classList.contains('hide'));
   $('#nav [data-v="mios"]').classList.toggle('hide', !me.trabajador_id && otras);
   $('#nav').classList.toggle('hide', $$('#nav button').filter(b=>!b.classList.contains('hide')).length<2);
 }
-const vistaInicial = () => ['cargar','mios','pagos','inf','eq'].find(v=>!$(`#nav [data-v="${v}"]`).classList.contains('hide')) || 'mios';
+const vistaInicial = () => ['cargar','mios','pagos','inf','eq','panel'].find(v=>!$(`#nav [data-v="${v}"]`).classList.contains('hide')) || 'mios';
 const tipoInicial = () => ({cargar_gastos:'gasto',cargar_jornadas:'jornada',cargar_adelantos:'adelanto',cargar_cobros:'cobro'})[['cargar_gastos','cargar_jornadas','cargar_adelantos','cargar_cobros'].find(p=>puede(p))] || 'gasto';
 $$('#nav button').forEach(b=>b.onclick=()=>{
   irA(b.dataset.v); render(); scrollTo(0,0);
@@ -1160,7 +1235,7 @@ function mensaje(){
   if(d) m+=`*Descuento por adelantos:* −${fmt(d)}\n`;
   m+=`${L}\n*TOTAL A COBRAR: ${fmt(l.bruto-d)}*\n${L}\n`;
   if(s>0) m+=`Saldo de adelantos pendiente: ${fmt(s-d)}\n\n`;
-  m+=`${cfg('wa_confirmar')}\n${APP_URL}?c=${liqCod}\n\n${me.nombre} · ${cfg('wa_firma')}`;
+  m+=`${cfg('wa_confirmar')}\n${APP_URL}?c=${liqCod}\n\n${me.nombre} · ${me.empresa?.firma || cfg('wa_firma')}`;
   return m;
 }
 function updLiq(){ const l=liq(liqT); $('#liqNeto').textContent=fmt(l.bruto-descVal()); $('#waMsg').textContent=mensaje(); }
@@ -1298,8 +1373,14 @@ $('#csv').onclick=()=>{
 
 /* ===================== EQUIPO ===================== */
 let editId=null, emodo='igual', efrec='semana';
+const linkEmpresa = slug => APP_URL + slug;
 function renderEq(){
   if(!esAdmin()) return;
+  const em=me.empresa; $('#miEmpresaCard').classList.toggle('hide',!em);
+  if(em){
+    $('#meNombre').textContent=em.nombre; $('#meLink').value=linkEmpresa(em.slug);
+    if(document.activeElement!==$('#meFirma')) $('#meFirma').value=em.firma||'';
+  }
   $('#trabList').innerHTML = T.trabajadores.length ? T.trabajadores.map(t=>`<li data-id="${t.id}" style="cursor:pointer"><span><b>${esc(t.nombre)}</b>${t.activo===false?' <span class="tag">inactivo</span>':''}<br><span class="muted">${fmt(t.precio_jornada)} / ${+t.horas_jornada} h · ${fmt(valorHora(t))}/h · ${t.frecuencia==='dia'?'por día':'por semana'}${t.telefono?'':' · sin WhatsApp'}</span></span><span class="tag">${t.extra_modo==='igual'?'Extra igual':t.extra_modo==='porcentaje'?'Extra +'+(+t.extra_porcentaje)+'%':'Extra fijo'}</span></li>`).join('') : '<li class="muted">Todavía no hay trabajadores.</li>';
   $$('#trabList li[data-id]').forEach(li=>li.onclick=()=>abrirTrab(li.dataset.id));
   $('#obraList').innerHTML = T.obras.map(o=>`<li><span>${esc(o.nombre)}</span><button class="btn ghost sm" data-obra="${o.id}">${o.activa!==false?'Terminar':'Reactivar'}</button></li>`).join('') || '<li class="muted">Todavía no hay obras.</li>';
@@ -1361,6 +1442,7 @@ $('#te-save').onclick=async()=>{
   if(editId){ Object.assign(byId('trabajadores',editId),data); } else T.trabajadores.push(data);
   $('#trabEdit').classList.add('hide'); llenarSelects(); renderEq(); toast('Guardado. Los cambios de precio valen para las jornadas nuevas');
 };
+$('#aliasOk2').onclick=()=>{ $('#aliasIn').value=$('#aliasIn2').value; $('#aliasOk').onclick(); };
 $('#aliasOk').onclick=async()=>{
   const a=$('#aliasIn').value.trim().toLowerCase()||null;
   if(a && (!/^[a-z0-9._-]{4,30}$/.test(a) || /^\d+$/.test(a))) return toast('Usá de 4 a 30 letras y números, sin espacios, y que no sea solo números');
@@ -1378,8 +1460,11 @@ $('#obraOk').onclick=async()=>{
 /* ===================== PANEL DE CONTROL (creador) ===================== */
 let panelPintado=false;
 function renderPanel(){
-  if(!me?.creador || panelPintado) return;
+  if(!me?.creador) return;
+  if(!$('#v-panel').classList.contains('hide') && !EMP.length) cargarEmpresas();
+  if(panelPintado) return;
   panelPintado=true;
+  if(document.activeElement!==$('#aliasIn2')) $('#aliasIn2').value=me.alias||'';
   $$('[data-cfg]').forEach(i=>i.value=cfg(i.dataset.cfg));
   $('#pnColTrab').innerHTML=COLS_TRAB.map(([k,t,,a])=>`<div class="pn-col"><input type="checkbox" data-ct="${k}" ${cfg('col_trab')[k]?.on!==false?'checked':''}><input type="text" data-ctt="${k}" value="${esc(colTrabT(k))}" placeholder="${esc(t)}">${a?'<span class="muted" style="font-size:12px">si ve adelantos</span>':''}</div>`).join('');
   $('#pnColXls').innerHTML=COLS_XLS.map(([k,t])=>`<div class="pn-col"><input type="checkbox" data-cx="${k}" ${cfg('col_xls')[k]?.on!==false?'checked':''}><input type="text" data-cxt="${k}" value="${esc(cfg('col_xls')[k]?.t||t)}" placeholder="${esc(t)}"></div>`).join('');
@@ -1404,6 +1489,96 @@ $('#pnReset').onclick=async()=>{
   if(await guardarCfg(JSON.parse(JSON.stringify(CFG0)))){ panelPintado=false; renderPanel(); toast('Textos originales restaurados'); }
 };
 
+/* ===================== EMPRESAS (panel del creador) ===================== */
+let EMP=[], empEdit=null, peDias=0;
+const hoyMas = (desde,d) => { const x=new Date((desde&&desde>hoyF()?desde:hoyF())+'T12:00'); x.setDate(x.getDate()+d); return iso(x); };
+const diasRest = v => Math.round((new Date(v+'T12:00')-new Date(hoyF()+'T12:00'))/864e5);
+const aSlug = t => String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'').slice(0,40);
+async function cargarEmpresas(){
+  if(!me?.creador || !navigator.onLine || !sb) return;
+  const {data,error}=await sb.rpc('panel_empresas');
+  if(error){ $('#pnEmpList').innerHTML=`<li class="muted">No se pudo cargar: ${esc(error.message)}</li>`; return; }
+  EMP=data||[]; pintarEmpresas();
+}
+function estadoEmp(e){
+  if(!e.activa) return '<span class="tag">Pausada</span>';
+  if(!e.vence) return '<span class="tag ok">Activa · sin vencimiento</span>';
+  const d=diasRest(e.vence);
+  return d<0 ? '<span class="tag">Vencida</span>' : `<span class="tag ${d<=7?'warn':'ok'}">Activa · vence ${fd(e.vence)} (${d} día${d===1?'':'s'})</span>`;
+}
+function pintarEmpresas(){
+  $('#pnEmpList').innerHTML = EMP.length ? EMP.map(e=>`<li style="display:block">
+    <b>${esc(e.nombre)}</b> ${estadoEmp(e)}<br>
+    <span class="muted">${esc(linkEmpresa(e.slug))}<br>${e.usuarios} usuario${e.usuarios==1?'':'s'}${e.dueno_tel?' · dueño '+esc(e.dueno_tel):' · sin teléfono de dueño'}${e.ultima_carga?' · última carga '+fd(e.ultima_carga):''}</span>
+    <div class="emp-acc">
+      <button class="btn ghost sm" data-ea="act" data-id="${e.id}">${e.activa?'Pausar':'Activar'}</button>
+      ${[30,60,90,180,365].map(d=>`<button class="btn ghost sm" data-ea="dias" data-d="${d}" data-id="${e.id}">+${d}</button>`).join('')}
+      <button class="btn ghost sm" data-ea="otros" data-id="${e.id}">+ días…</button>
+      <button class="btn ghost sm" data-ea="sinv" data-id="${e.id}">Sin vencimiento</button>
+      <button class="btn ghost sm" data-ea="edit" data-id="${e.id}">Editar</button>
+      <button class="btn ghost sm" data-ea="copiar" data-id="${e.id}">Copiar enlace</button>
+      <button class="btn ghost sm" data-ea="wa" data-id="${e.id}">Invitar por WhatsApp</button>
+    </div></li>`).join('') : '<li class="muted">Todavía no hay empresas.</li>';
+  $$('[data-ea]').forEach(b=>b.onclick=()=>accionEmp(b.dataset.ea,EMP.find(x=>x.id===b.dataset.id),+b.dataset.d));
+}
+async function updEmp(id,cambios,ok){
+  if(!await online()) return;
+  const {error}=await sb.from('empresas').update(cambios).eq('id',id);
+  if(error) return toast(/duplicate|unique/i.test(error.message)?'Ese enlace ya lo usa otra empresa':/check/i.test(error.message)?'El enlace tiene que tener de 3 a 40 letras minúsculas, números o guiones':'Error: '+error.message);
+  toast(ok); cargarEmpresas();
+}
+const mensajeInv = e => `Hola! Te invito a usar ${cfg('app_nombre')} para ${e.nombre}.\nEntrá a este enlace y tocá "Crear cuenta" con tu teléfono:\n${linkEmpresa(e.slug)}`;
+async function copiar(t){ try{ await navigator.clipboard.writeText(t); toast('Enlace copiado'); }catch(e){ prompt('Copiá el enlace:',t); } }
+function accionEmp(a,e,d){
+  if(a==='act') return updEmp(e.id,{activa:!e.activa},e.activa?'Empresa pausada':'Empresa activada');
+  if(a==='dias') return updEmp(e.id,{vence:hoyMas(e.vence,d),activa:true},`Se sumaron ${d} días`);
+  if(a==='otros'){ const n=parseInt(prompt('¿Cuántos días querés sumar?'),10); if(n>0) updEmp(e.id,{vence:hoyMas(e.vence,n),activa:true},`Se sumaron ${n} días`); return; }
+  if(a==='sinv') return updEmp(e.id,{vence:null},'Sin vencimiento');
+  if(a==='copiar') return copiar(linkEmpresa(e.slug));
+  if(a==='wa'){ const t=tel10(e.dueno_tel); window.open('https://wa.me/'+(t?'549'+t:'')+'?text='+encodeURIComponent(mensajeInv(e)),'_blank'); return; }
+  if(a==='edit') abrirEmp(e);
+}
+function abrirEmp(e){
+  empEdit=e||null; peDias=0;
+  $('#pnEmpTit').textContent=e?'Editar '+e.nombre:'Nueva empresa';
+  $('#pe-nombre').value=e?.nombre||''; $('#pe-slug').value=e?.slug||''; $('#pe-tel').value=e?.dueno_tel||''; $('#pe-diasX').value='';
+  $('#pe-diasBox').classList.toggle('hide',!!e); $('#pe-save').textContent=e?'Guardar':'Crear empresa';
+  $$('#pe-dias button').forEach(b=>b.classList.toggle('on',b.dataset.d==='0'));
+  $('#pe-base').textContent=APP_URL.replace(/^https?:\/\//,'');
+  $('#pnEmpForm').classList.remove('hide'); $('#pnEmpForm').scrollIntoView({behavior:'smooth'}); $('#pe-nombre').focus();
+}
+$('#pnEmpNueva').onclick=()=>abrirEmp(null);
+$('#pe-cancel').onclick=()=>$('#pnEmpForm').classList.add('hide');
+$('#pe-nombre').addEventListener('input',()=>{ if(!empEdit) $('#pe-slug').value=aSlug($('#pe-nombre').value); });
+$('#pe-slug').addEventListener('input',()=>{ const v=$('#pe-slug').value.toLowerCase().replace(/[^a-z0-9-]/g,''); if(v!==$('#pe-slug').value) $('#pe-slug').value=v; });
+$$('#pe-dias button').forEach(b=>b.onclick=()=>{ peDias=+b.dataset.d; $('#pe-diasX').value=''; $$('#pe-dias button').forEach(x=>x.classList.toggle('on',x===b)); });
+$('#pe-diasX').addEventListener('input',()=>{ $$('#pe-dias button').forEach(x=>x.classList.remove('on')); });
+$('#pe-save').onclick=async()=>{
+  const nombre=$('#pe-nombre').value.trim(), slug=$('#pe-slug').value.trim(), telRaw=$('#pe-tel').value.trim(), tel=tel10(telRaw);
+  if(!nombre) return toast('Poné el nombre de la empresa');
+  if(!/^[a-z0-9][a-z0-9-]{2,39}$/.test(slug)) return toast('El enlace tiene que tener de 3 a 40 letras minúsculas, números o guiones');
+  if(telRaw && !tel) return toast('Escribí el teléfono con código de área, sin 0 ni 15');
+  if(empEdit){
+    if(slug!==empEdit.slug && !confirm(`El enlace anterior (${linkEmpresa(empEdit.slug)}) va a dejar de andar. ¿Seguir?`)) return;
+    await updEmp(empEdit.id,{nombre,slug,dueno_tel:tel},'Empresa actualizada'); $('#pnEmpForm').classList.add('hide'); return;
+  }
+  const dx=parseInt($('#pe-diasX').value,10), dias=dx>0?dx:peDias;
+  if(!await online()) return;
+  const {error}=await sb.from('empresas').insert({nombre,slug,dueno_tel:tel,vence:dias?hoyMas(null,dias):null});
+  if(error) return toast(/duplicate|unique/i.test(error.message)?'Ese enlace ya lo usa otra empresa':'Error: '+error.message);
+  $('#pnEmpForm').classList.add('hide'); toast('Empresa creada. Mandale el enlace al dueño'); cargarEmpresas();
+};
+// Mi empresa (administrador)
+$('#meCopiar').onclick=()=>copiar($('#meLink').value);
+$('#meWa').onclick=()=>window.open('https://wa.me/?text='+encodeURIComponent(`Hola! Creá tu cuenta en ${cfg('app_nombre')} para ${me.empresa.nombre} con este enlace (tocá "Crear cuenta" y usá tu teléfono):\n${$('#meLink').value}`),'_blank');
+$('#meFirmaOk').onclick=async()=>{
+  if(!await online()) return;
+  const f=$('#meFirma').value.trim();
+  const {error}=await sb.rpc('cambiar_firma_empresa',{p_firma:f});
+  if(error) return toast('Error: '+error.message);
+  me.empresa.firma=f||null; store.set('go-cache',{me,T,en:Date.now()}); toast('Firma guardada');
+};
+
 /* ===================== Render general ===================== */
 function render(){ renderPanel(); pintarCola(); renderPend(); renderUltimas(); renderPagos(); renderMios(); renderInf(); renderEq(); }
 
@@ -1412,6 +1587,9 @@ function render(){ renderPanel(); pintarCola(); renderPend(); renderUltimas(); r
   netState();
   const cod=new URLSearchParams(location.search).get('c');
   CFG=mezclarCfg(store.get('go-cfg',{})); aplicarTextos(); const cfgLista=cargarCfg();
+  const slugQ=(new URLSearchParams(location.search).get('e')||'').toLowerCase();
+  if(/^[a-z0-9][a-z0-9-]{2,39}$/.test(slugQ)){ store.set('go-empresa',slugQ); history.replaceState(null,'',APP_URL); }
+  mostrarEmpresaLogin();
   if(cod){ await cfgLista; return pantallaConfirmar(cod); }
   if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
   let sesion=null;
