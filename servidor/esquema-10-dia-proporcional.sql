@@ -44,3 +44,15 @@ begin
   new.valor_hora_extra := round(ve * (1 + rec / 100), 2);
   return new;
 end $$;
+
+-- Días cortos cargados antes de correr esta parte y que todavía no se pagaron:
+-- se recalculan con el precio proporcional.
+update jornadas j
+   set precio_jornada = round(t.precio_jornada * j.horas / t.horas_jornada, 2),
+       horas_extra    = 0
+  from trabajadores t
+ where t.id = j.trabajador_id
+   and j.pago_id is null
+   and coalesce(j.estado_dia, 'trabajado') = 'trabajado'
+   and j.horas > 0 and j.horas < t.horas_jornada
+   and j.precio_jornada = t.precio_jornada;
