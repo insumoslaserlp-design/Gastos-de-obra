@@ -130,6 +130,8 @@ input[type=date]{min-width:0;max-width:100%;display:block;-webkit-appearance:non
   #doc .bar-top{display:none}
   .paper{box-shadow:none;margin:0;max-width:none;padding:0}
 }
+.perm-roles{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px}
+.perm-roles .check{margin:0;font-size:14px;gap:6px}
 </style>
 </head>
 <body>
@@ -175,20 +177,19 @@ input[type=date]{min-width:0;max-width:100%;display:block;-webkit-appearance:non
 <main>
 <!-- CARGAR -->
 <section id="v-cargar">
-  <div class="note hide" id="sinFicha">Tu usuario todavía no está habilitado. Pedile al administrador que te asigne tu rol.</div>
-  <div class="note hide" id="colaBox"></div>
+    <div class="note hide" id="colaBox"></div>
   <div class="card hide" id="pendCard">
     <h2>Para aprobar</h2>
-    <p class="muted" style="margin-top:-6px">Lo que cargaron los trabajadores desde su cuenta.</p>
+    <p class="muted" style="margin-top:-6px">Lo que cargaron usuarios que no tienen permiso para aprobar.</p>
     <ul class="list" id="pendList"></ul>
   </div>
   <div class="note hide" id="draftBox">Tenés un borrador guardado. <a href="#" id="draftDiscard">Descartar</a></div>
   <div class="card" id="cargaCard">
     <div class="seg" id="tipoSeg">
-      <button data-t="gasto" class="on">Gasto</button>
-      <button data-t="jornada">Jornada</button>
-      <button data-t="adelanto" data-rol="admin">Adelanto</button>
-      <button data-t="cobro" data-rol="admin">Cobro</button>
+      <button data-t="gasto" class="on" data-perm="cargar_gastos">Gasto</button>
+      <button data-t="jornada" data-perm="cargar_jornadas">Jornada</button>
+      <button data-t="adelanto" data-perm="cargar_adelantos">Adelanto</button>
+      <button data-t="cobro" data-perm="cargar_cobros">Cobro</button>
     </div>
 
     <div id="obraBox">
@@ -272,7 +273,7 @@ input[type=date]{min-width:0;max-width:100%;display:block;-webkit-appearance:non
   </div>
 
   <div class="card">
-    <div class="h2row"><h2>Últimas cargas</h2><button class="icon-btn" id="hojaBtn">📄 Comprobantes</button></div>
+    <div class="h2row"><h2>Últimas cargas</h2><button class="icon-btn" id="hojaBtn" data-perm="ver_comprobantes cargar_gastos">📄 Comprobantes</button></div>
     <ul class="list" id="ultimas"></ul>
     <button class="btn ghost hide" id="masBtn">Ver más</button>
   </div>
@@ -316,19 +317,32 @@ input[type=date]{min-width:0;max-width:100%;display:block;-webkit-appearance:non
   </div>
 </section>
 
-<!-- MIS PAGOS (trabajador) -->
+<!-- MI DETALLE (lo de cada trabajador) -->
 <section id="v-mios" class="hide">
+  <div class="note hide" id="sinFicha"></div>
+  <div id="mioBox">
   <div class="card">
-    <h2>Mi cuenta</h2>
-    <div class="kpis" id="mioKpis"></div>
+    <h2 id="mioTit">Mi detalle</h2>
+    <div class="seg" id="mioPer">
+      <button data-p="semana" class="on">Esta semana</button>
+      <button data-p="mes">Este mes</button>
+      <button data-p="anio">Este año</button>
+    </div>
+    <p class="muted" id="mioRango" style="margin:8px 0 0"></p>
+    <div class="kpis" id="mioKpis" style="margin-top:10px"></div>
   </div>
   <div class="card">
-    <h2>Mis jornadas sin cobrar</h2>
+    <h2>Mis jornadas</h2>
     <ul class="list" id="mioJor"></ul>
+  </div>
+  <div class="card">
+    <h2>Mis adelantos</h2>
+    <ul class="list" id="mioAdel"></ul>
   </div>
   <div class="card">
     <h2>Mis pagos</h2>
     <ul class="list" id="mioPagos"></ul>
+  </div>
   </div>
 </section>
 
@@ -354,13 +368,13 @@ input[type=date]{min-width:0;max-width:100%;display:block;-webkit-appearance:non
       <button data-c="horas" class="on">Horas</button>
       <button data-c="sueldo">Sueldo</button>
       <button data-c="ext">Extras</button>
-      <button data-c="adel" data-rol="admin">Adelantos</button>
+      <button data-c="adel" data-perm="pagos cargar_adelantos">Adelantos</button>
     </div>
     <div id="cmpBars" style="margin-top:10px"></div>
     <div class="scroll" style="margin-top:10px"><table class="t" id="cmpTable"></table></div>
   </div>
   <div class="card"><h2>Por obra</h2><ul class="list" id="porObra"></ul></div>
-  <div class="card" data-rol="admin"><h2>Cobros por tipo de trabajo</h2><div id="porTipo"></div></div>
+  <div class="card" data-perm="ver_cobros"><h2>Cobros por tipo de trabajo</h2><div id="porTipo"></div></div>
   <div class="card"><h2>Gastos por categoría</h2><div id="porCat"></div></div>
 </section>
 
@@ -414,8 +428,14 @@ input[type=date]{min-width:0;max-width:100%;display:block;-webkit-appearance:non
   </div>
   <div class="card">
     <h2>Usuarios y roles</h2>
-    <p class="muted" style="margin-top:-6px">Cada persona crea su cuenta desde la app. Acá le asignás el rol y, si es trabajador, su ficha.</p>
+    <p class="muted" style="margin-top:-6px">Cada persona crea su cuenta desde la app. Acá le asignás el rol y su ficha de trabajador (la ficha es lo que le permite ver su detalle).</p>
     <ul class="list" id="userList"></ul>
+  </div>
+  <div class="card">
+    <h2>Permisos por rol</h2>
+    <p class="muted" style="margin-top:-6px">Elegí qué puede hacer cada rol. El administrador puede todo. Cada uno ve siempre su propio detalle si tiene ficha de trabajador.</p>
+    <ul class="list" id="permTabla"></ul>
+    <p class="muted" style="margin-bottom:0">Los cambios valen la próxima vez que cada uno abra la app.</p>
   </div>
   <div class="card">
     <h2>Categorías de gasto</h2>
@@ -431,11 +451,11 @@ input[type=date]{min-width:0;max-width:100%;display:block;-webkit-appearance:non
 </main>
 
 <nav id="nav">
-  <button data-v="cargar" class="on"><span>＋</span>Cargar</button>
-  <button data-v="pagos" data-rol="admin"><span>💬</span>Pagos</button>
-  <button data-v="mios" data-rol="trabajador"><span>💵</span>Mis pagos</button>
-  <button data-v="inf" data-rol="admin encargado"><span>📊</span>Informes</button>
-  <button data-v="eq" data-rol="admin"><span>👷</span>Equipo</button>
+  <button data-v="cargar" class="on" data-perm="cargar_gastos cargar_jornadas cargar_adelantos cargar_cobros"><span>＋</span>Cargar</button>
+  <button data-v="mios"><span>💵</span>Mi detalle</button>
+  <button data-v="pagos" data-perm="pagos"><span>💬</span>Pagos</button>
+  <button data-v="inf" data-perm="ver_informes ver_cobros"><span>📊</span>Informes</button>
+  <button data-v="eq" data-perm="admin"><span>👷</span>Equipo</button>
 </nav>
 </div>
 
@@ -507,7 +527,7 @@ let sb = null;
 try { sb = window.supabase.createClient(SUPA_URL, SUPA_KEY); } catch(e) { console.error(e); }
 
 /* ===================== Estado ===================== */
-const TABLAS = ['obras','trabajadores','tipos_trabajo','categorias_gasto','feriados','jornadas','gastos','adelantos','cobros','pagos','quienes'];
+const TABLAS = ['obras','trabajadores','tipos_trabajo','categorias_gasto','feriados','jornadas','gastos','adelantos','cobros','pagos','quienes','permisos_rol'];
 let me = null;            // perfil
 let T = {};               // tablas en memoria
 TABLAS.forEach(t=>T[t]=[]); T.perfiles=[];
@@ -515,6 +535,22 @@ let cola = store.get('go-cola', []);
 const esAdmin = () => me?.rol==='admin';
 const esEnc = () => me?.rol==='encargado';
 const esTrab = () => me?.rol==='trabajador';
+const ROL_TXT = {admin:'Admin',encargado:'Encargado',asistente:'Asistente',trabajador:'Trabajador'};
+const ROL_LARGO = {admin:'Administrador',encargado:'Encargado',asistente:'Asistente',trabajador:'Trabajador'};
+// Permisos que el administrador le puede dar a cada rol
+const PERMISOS = [
+  ['cargar_gastos','Cargar gastos'],
+  ['cargar_jornadas','Cargar jornadas'],
+  ['cargar_adelantos','Cargar adelantos'],
+  ['cargar_cobros','Cargar cobros'],
+  ['aprobar','Aprobar cargas (lo suyo entra aprobado)'],
+  ['pagos','Liquidar pagos y mandar WhatsApp'],
+  ['ver_informes','Ver informes'],
+  ['ver_cobros','Ver cobros y ganancia'],
+  ['ver_comprobantes','Ver comprobantes de todos'],
+];
+// ¿El usuario puede alguna de estas cosas? El administrador puede todo.
+const puede = (...ps) => esAdmin() || ps.some(p=>(T.permisos_rol||[]).some(r=>r.rol===me?.rol && r.permiso===p));
 
 /* ===================== Confirmación de pago ===================== */
 async function pantallaConfirmar(cod){
@@ -635,20 +671,22 @@ async function iniciar(){
   await cargarDatos();
   if(!me){ show('s-login'); return; }
   if(await vencioAdmin()) return;
-  aplicarRol(); irA('cargar'); llenarSelects(); setTipo('gasto'); loadDraft(); render(); sync();
+  aplicarRol(); irA(vistaInicial()); llenarSelects(); setTipo(tipoInicial()); loadDraft(); render(); sync();
 }
 function irA(v){
   $$('#nav button').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
   ['cargar','pagos','mios','inf','eq'].forEach(x=>$('#v-'+x).classList.toggle('hide',x!==v));
 }
 function aplicarRol(){
-  $('#who').textContent = `${me.nombre} · ${{admin:'Admin',encargado:'Encargado',trabajador:'Trabajador'}[me.rol]}`;
-  $$('[data-rol]').forEach(el=>el.classList.toggle('hide', !el.dataset.rol.split(' ').includes(me.rol)));
-  const sinFicha = esTrab() && !me.trabajador_id;
-  $('#sinFicha').classList.toggle('hide',!sinFicha);
-  $('#cargaCard').classList.toggle('hide',sinFicha);
-  $('#j-trabBox').classList.toggle('hide',esTrab());
+  $('#who').textContent = `${me.nombre} · ${ROL_TXT[me.rol]||me.rol}`;
+  $$('[data-perm]').forEach(el=>el.classList.toggle('hide', !puede(...el.dataset.perm.split(' '))));
+  // "Mi detalle" se ve si tiene ficha de trabajador, o si no tiene ninguna otra pantalla
+  const otras = ['cargar','pagos','inf','eq'].some(v=>!$(`#nav [data-v="${v}"]`).classList.contains('hide'));
+  $('#nav [data-v="mios"]').classList.toggle('hide', !me.trabajador_id && otras);
+  $('#nav').classList.toggle('hide', $$('#nav button').filter(b=>!b.classList.contains('hide')).length<2);
 }
+const vistaInicial = () => ['cargar','mios','pagos','inf','eq'].find(v=>!$(`#nav [data-v="${v}"]`).classList.contains('hide')) || 'mios';
+const tipoInicial = () => ({cargar_gastos:'gasto',cargar_jornadas:'jornada',cargar_adelantos:'adelanto',cargar_cobros:'cobro'})[['cargar_gastos','cargar_jornadas','cargar_adelantos','cargar_cobros'].find(p=>puede(p))] || 'gasto';
 $$('#nav button').forEach(b=>b.onclick=()=>{
   irA(b.dataset.v); render(); scrollTo(0,0);
 });
@@ -696,7 +734,7 @@ setInterval(sync,30000);
 const byId = (t,id) => T[t].find(r=>r.id===id);
 const obraN = id => byId('obras',id)?.nombre || 'General';
 const trabN = id => byId('trabajadores',id)?.nombre || '—';
-const quien = id => { const q=byId('quienes',id); return q ? `${q.nombre} · ${{admin:'Admin',encargado:'Encargado',trabajador:'Trabajador'}[q.rol]}` : (id===me?.id? me.nombre : ''); };
+const quien = id => { const q=byId('quienes',id); return q ? `${q.nombre} · ${ROL_TXT[q.rol]||q.rol}` : (id===me?.id? me.nombre : ''); };
 const valorHora = t => t.precio_jornada / (t.horas_jornada||8);
 const valorExtra = t => t.extra_modo==='igual' ? valorHora(t) : t.extra_modo==='porcentaje' ? valorHora(t)*(1+t.extra_porcentaje/100) : +t.extra_fijo;
 const recDia = (t,dia) => dia==='sabado' ? +t.recargo_sabado : (dia==='domingo'||dia==='feriado') ? +t.recargo_domingo : 0;
@@ -772,7 +810,7 @@ $$('#c-modo button').forEach(b=>b.onclick=()=>{
   $('#c-m2box').classList.toggle('hide',cmodo!=='m2'); $('#c-hbox').classList.toggle('hide',cmodo!=='hora'); $('#c-totbox').classList.toggle('hide',cmodo!=='total'); calcForm();
 });
 const montoCobro = () => cmodo==='m2' ? num($('#c-m2').value)*num($('#c-pm2').value) : cmodo==='hora' ? num($('#c-horas').value)*num($('#c-ph').value) : num($('#c-total').value);
-function jTrabId(){ return esTrab() ? me.trabajador_id : $('#j-trab').value; }
+function jTrabId(){ return $('#j-trab').value; }
 function calcForm(){
   const t=byId('trabajadores',jTrabId());
   if(t){
@@ -863,7 +901,7 @@ $('#guardar').onclick=async()=>{
       precio_unitario: cmodo==='m2'?num($('#c-pm2').value):cmodo==='hora'?num($('#c-ph').value):null};
   }
   // se muestra enseguida y se sube en segundo plano
-  const local={...fila,cargado_por:me.id,cargado_en:new Date().toISOString(),estado:esTrab()?'pendiente':'aprobado',_pend:true};
+  const local={...fila,cargado_por:me.id,cargado_en:new Date().toISOString(),estado:puede('aprobar')?'aprobado':'pendiente',_pend:true};
   if(tabla==='jornadas') local.dia=fila.dia||tipoDia(fila.fecha);
   T[tabla].push(local);
   cola.push({tabla,fila,foto}); guardarCola();
@@ -945,7 +983,7 @@ async function armarHoja(){
 function fotosCargadas(){ return Promise.all($$('#paper img').map(im=>im.complete&&im.src?Promise.resolve():new Promise(r=>{im.onload=im.onerror=r; setTimeout(r,8000);}))); }
 
 function renderPend(){
-  if(!esAdmin()){ $('#pendCard').classList.add('hide'); return; }
+  if(!puede('aprobar')){ $('#pendCard').classList.add('hide'); return; }
   const xs=[...T.jornadas.map(r=>({r,t:'jornadas'})),...T.gastos.map(r=>({r,t:'gastos'}))].filter(x=>x.r.estado==='pendiente');
   $('#pendCard').classList.toggle('hide',!xs.length);
   $('#pendList').innerHTML=xs.map(({r,t})=>`<li style="align-items:flex-start"><span>${esc(describe(r,t))} · <b>${fmt(montoReg(r,t))}</b><br><span class="muted">${fd(r.fecha)} · ${esc(quien(r.cargado_por))}${r.comprobante?` · <a href="#" data-foto="${esc(r.comprobante)}">📎 ver</a>`:''}</span><br><button class="btn sm" data-ok="${t}:${r.id}">Aprobar</button> <button class="btn bad sm" data-no="${t}:${r.id}">Rechazar</button></span></li>`).join('');
@@ -972,7 +1010,7 @@ function liq(t){
   return {js,dias,ext,ext2,jor,extM,bruto:jor+extM,precioTxt:precios.length===1?fmt(precios[0]):'varios precios'};
 }
 function renderPagos(){
-  if(!esAdmin()) return;
+  if(!puede('pagos')) return;
   const [d,h]=rango();
   $('#pagoRango').textContent = pper==='dia' ? `Hoy ${fd(h)}` : `Del ${fd(d)} al ${fd(h)}`;
   const ts=T.trabajadores.filter(t=>t.activo!==false);
@@ -985,7 +1023,7 @@ function renderPagos(){
     const s=saldoAdel(t.id);
     return `<li style="align-items:flex-start"><span><b>${esc(t.nombre)}</b><br><span class="muted">${movs.length?movs.map(m=>m.txt).join('<br>'):'Sin movimientos'}</span></span><b class="${s>0?'neg':''}">${fmt(s)}</b></li>`;}).join('');
   const ps=[...T.pagos].sort((a,b)=>String(b.cargado_en).localeCompare(String(a.cargado_en)));
-  $('#histList').innerHTML=ps.length?ps.map(p=>`<li style="align-items:flex-start"><span><b>${esc(trabN(p.trabajador_id))}</b> · ${fmt(+p.bruto - +p.descuento_adelanto)}<br><span class="muted">${fd(p.desde)} al ${fd(p.hasta)} · enviado ${fdh(p.cargado_en)}${p.estado==='confirmado'?`<br>Recibido confirmado el ${fdh(p.confirmado_en)}`:''}</span></span><span class="tag ${p.estado==='confirmado'?'ok':'warn'}">${p.estado==='confirmado'?'✔ Recibido':'Esperando'}</span><button class="del" title="Borrar" data-delpago="${p.id}">🗑</button></li>`).join(''):'<li class="muted">Todavía no hay pagos.</li>';
+  $('#histList').innerHTML=ps.length?ps.map(p=>`<li style="align-items:flex-start"><span><b>${esc(trabN(p.trabajador_id))}</b> · ${fmt(+p.bruto - +p.descuento_adelanto)}<br><span class="muted">${fd(p.desde)} al ${fd(p.hasta)} · enviado ${fdh(p.cargado_en)}${p.estado==='confirmado'?`<br>Recibido confirmado el ${fdh(p.confirmado_en)}`:''}</span></span><span class="tag ${p.estado==='confirmado'?'ok':'warn'}">${p.estado==='confirmado'?'✔ Recibido':'Esperando'}</span>${esAdmin()?`<button class="del" title="Borrar" data-delpago="${p.id}">🗑</button>`:''}</li>`).join(''):'<li class="muted">Todavía no hay pagos.</li>';
   $$('[data-delpago]').forEach(b=>b.onclick=()=>borrar('pagos',b.dataset.delpago));
 }
 $('#histReload').onclick=async()=>{ if(!await online()) return; try{ T.pagos=await fetchAll('pagos'); renderPagos(); toast('Actualizado'); }catch(e){ toast('Error: '+e.message); } };
@@ -1042,16 +1080,38 @@ $('#waBtn').onclick=async()=>{
   finally{ $('#waBtn').disabled=false; }
 };
 
-/* ===================== MIS PAGOS (trabajador) ===================== */
+/* ===================== MI DETALLE (cada trabajador ve lo suyo) ===================== */
+let mper='semana';
+const fmtH = h => (+h||0).toLocaleString('es-AR',{maximumFractionDigits:2});
+$$('#mioPer button').forEach(b=>b.onclick=()=>{mper=b.dataset.p; $$('#mioPer button').forEach(x=>x.classList.toggle('on',x===b)); renderMios();});
+function mioDesde(){ const h=hoyF(); return mper==='semana'?lunes():mper==='mes'?h.slice(0,8)+'01':h.slice(0,5)+'01-01'; }
 function renderMios(){
-  if(!esTrab()||!me.trabajador_id) return;
-  const tid=me.trabajador_id;
-  const sin=T.jornadas.filter(j=>j.trabajador_id===tid&&!j.pago_id&&j.estado!=='rechazado').sort((a,b)=>b.fecha.localeCompare(a.fecha));
-  const aCobrar=sin.filter(j=>j.estado==='aprobado').reduce((a,j)=>a+jorTotal(j),0);
-  $('#mioKpis').innerHTML=`<div class="kpi">Por cobrar<b>${fmt(aCobrar)}</b></div><div class="kpi">Debo de adelantos<b>${fmt(saldoAdel(tid))}</b></div>`;
-  $('#mioJor').innerHTML=sin.length?sin.map(j=>`<li><span>${fd(j.fecha)} · ${esc(obraN(j.obra_id))}${+j.horas_extra?` · +${+j.horas_extra} h extra`:''}<br><span class="muted">${j.estado==='pendiente'?'Esperando aprobación':'Aprobada'}</span></span><b>${j.estado==='aprobado'?fmt(jorTotal(j)):''}</b></li>`).join(''):'<li class="muted">No hay jornadas pendientes.</li>';
+  const tid=me.trabajador_id, ficha=tid&&byId('trabajadores',tid);
+  $('#sinFicha').classList.toggle('hide',!!tid);
+  $('#sinFicha').textContent = 'Tu usuario todavía no está vinculado a tu ficha de trabajador. Pedile al administrador que lo vincule (o que cargue tu teléfono en tu ficha).';
+  $('#mioBox').classList.toggle('hide',!tid);
+  if(!tid) return;
+  const desde=mioDesde(), hasta=hoyF(), hj=+(ficha?.horas_jornada)||8;
+  $('#mioTit').textContent = ficha ? 'Detalle de '+ficha.nombre : 'Mi detalle';
+  $('#mioRango').textContent = `Del ${fd(desde)} al ${fd(hasta)}`;
+  const mias=T.jornadas.filter(j=>j.trabajador_id===tid);
+  const enPer=mias.filter(j=>j.fecha>=desde&&j.fecha<=hasta&&j.estado!=='rechazado').sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  const ok=enPer.filter(j=>j.estado==='aprobado');
+  const dias=ok.length, ext=ok.reduce((a,j)=>a+ +j.horas_extra,0), ganado=ok.reduce((a,j)=>a+jorTotal(j),0);
+  const porCobrar=mias.filter(j=>j.estado==='aprobado'&&!j.pago_id).reduce((a,j)=>a+jorTotal(j),0);
   const ps=T.pagos.filter(p=>p.trabajador_id===tid).sort((a,b)=>String(b.cargado_en).localeCompare(String(a.cargado_en)));
-  $('#mioPagos').innerHTML=ps.length?ps.map(p=>`<li><span>${fd(p.desde)} al ${fd(p.hasta)}<br><span class="muted">${p.estado==='confirmado'?'Confirmaste el '+fdh(p.confirmado_en):'Sin confirmar'}</span></span><b>${fmt(+p.bruto - +p.descuento_adelanto)}</b></li>`).join(''):'<li class="muted">Todavía no hay pagos.</li>';
+  const cobrado=ps.filter(p=>String(p.cargado_en).slice(0,10)>=desde).reduce((a,p)=>a+(+p.bruto - +p.descuento_adelanto),0);
+  $('#mioKpis').innerHTML=`<div class="kpi">Días trabajados<b>${dias}</b></div><div class="kpi">Horas<b>${fmtH(dias*hj)} + ${fmtH(ext)} extra</b></div>`+
+    `<div class="kpi">Ganado en el período<b>${fmt(ganado)}</b></div><div class="kpi">Cobrado en el período<b>${fmt(cobrado)}</b></div>`+
+    `<div class="kpi">Por cobrar (todo)<b>${fmt(porCobrar)}</b></div><div class="kpi">Debo de adelantos<b class="${saldoAdel(tid)>0?'neg':''}">${fmt(saldoAdel(tid))}</b></div>`;
+  const DIA={habil:'',sabado:' · sábado',domingo:' · domingo',feriado:' · feriado'};
+  $('#mioJor').innerHTML=enPer.length?enPer.map(j=>{
+    const est=j.estado==='pendiente'?'<span class="tag warn">Esperando aprobación</span>':j.pago_id?'<span class="tag ok">Pagada</span>':'<span class="tag">Por cobrar</span>';
+    return `<li style="align-items:flex-start"><span>${fd(j.fecha)}${DIA[j.dia]||''} · ${esc(obraN(j.obra_id))}<br><span class="muted">${fmtH(hj)} h${+j.horas_extra?` + ${fmtH(+j.horas_extra)} h extra × ${fmt(jorValorExtra(j))}`:''}</span><br>${est}</span><b>${j.estado==='aprobado'?fmt(jorTotal(j)):''}</b></li>`;}).join(''):'<li class="muted">No hay jornadas en este período.</li>';
+  const movs=[...T.adelantos.filter(r=>r.trabajador_id===tid).map(r=>({f:r.fecha,txt:`Adelanto${r.motivo?' ('+esc(r.motivo)+')':''}`,m:+r.monto})),
+              ...ps.filter(p=> +p.descuento_adelanto).map(p=>({f:String(p.cargado_en).slice(0,10),txt:'Descontado en un pago',m:-p.descuento_adelanto}))].sort((a,b)=>b.f.localeCompare(a.f));
+  $('#mioAdel').innerHTML=movs.length?movs.map(x=>`<li><span>${fd(x.f)} · ${x.txt}</span><b class="${x.m>0?'neg':'pos'}">${x.m>0?'+':'−'}${fmt(Math.abs(x.m))}</b></li>`).join(''):'<li class="muted">No tenés adelantos.</li>';
+  $('#mioPagos').innerHTML=ps.length?ps.map(p=>`<li style="align-items:flex-start"><span>${fd(p.desde)} al ${fd(p.hasta)}${+p.descuento_adelanto?`<br><span class="muted">Bruto ${fmt(p.bruto)} − adelantos ${fmt(p.descuento_adelanto)}</span>`:''}<br>${p.estado==='confirmado'?`<span class="muted">Confirmaste el ${fdh(p.confirmado_en)}</span>`:`<a href="${APP_URL}?c=${esc(p.codigo)}">Confirmar que lo recibí</a>`}</span><b>${fmt(+p.bruto - +p.descuento_adelanto)}</b></li>`).join(''):'<li class="muted">Todavía no hay pagos.</li>';
 }
 
 /* ===================== INFORMES ===================== */
@@ -1082,20 +1142,20 @@ function stats(){
 }
 function barras(arr,b2){ const mx=Math.max(1,...arr.map(x=>x[1])); return arr.map(([c,v,l])=>`<div class="barrow"><span>${esc(c)}</span><div class="bar ${b2?'b2':''}" style="width:${v/mx*100}%"></div><span style="text-align:right">${l??fmt(v)}</span></div>`).join(''); }
 function renderInf(){
-  if(esTrab()) return;
-  const S=stats(), adm=esAdmin();
+  if(!puede('ver_informes','ver_cobros')) return;
+  const S=stats(), adm=puede('ver_cobros'), vadel=puede('pagos','cargar_adelantos');
   $('#kpis').innerHTML=(adm?`<div class="kpi">Cobrado<b>${fmt(S.cobros)}</b></div>`:'')+`<div class="kpi">Sueldos<b>${fmt(S.sueldos)}</b></div><div class="kpi">Gastos<b>${fmt(S.gastos)}</b></div>`+(adm?`<div class="kpi">Ganancia<b class="${S.gan>=0?'pos':'neg'}">${fmt(S.gan)}</b></div>`:'');
   const arr=[...S.porTrab].sort((a,b)=>b[cmp]-a[cmp]).map(x=>[x.t.nombre,x[cmp],(cmp==='horas'||cmp==='ext')?x[cmp]+' h':fmt(x[cmp])]);
   $('#cmpBars').innerHTML=arr.length?barras(arr,cmp==='ext'||cmp==='adel'):'<p class="muted">Sin jornadas en este período.</p>';
-  $('#cmpTable').innerHTML=`<tr><th>Trabajador</th><th>Días</th><th>Horas</th><th>Hs extra</th><th>Sueldo</th><th>$/h real</th>${adm?'<th>Adelantos</th>':''}</tr>`+
-    S.porTrab.map(x=>`<tr><td>${esc(x.t.nombre)}</td><td>${x.dias}</td><td>${x.horas}</td><td>${x.ext}</td><td>${fmt(x.sueldo)}</td><td>${fmt(x.ph)}</td>${adm?`<td>${fmt(x.adel)}</td>`:''}</tr>`).join('');
+  $('#cmpTable').innerHTML=`<tr><th>Trabajador</th><th>Días</th><th>Horas</th><th>Hs extra</th><th>Sueldo</th><th>$/h real</th>${vadel?'<th>Adelantos</th>':''}</tr>`+
+    S.porTrab.map(x=>`<tr><td>${esc(x.t.nombre)}</td><td>${x.dias}</td><td>${x.horas}</td><td>${x.ext}</td><td>${fmt(x.sueldo)}</td><td>${fmt(x.ph)}</td>${vadel?`<td>${fmt(x.adel)}</td>`:''}</tr>`).join('');
   $('#porObra').innerHTML=S.porObra.length?S.porObra.map(o=>`<li><span><b>${esc(o.nombre)}</b><br><span class="muted">${adm?`Cobro ${fmt(o.c)} · `:''}Sueldos ${fmt(o.s)} · Gastos ${fmt(o.g)}</span></span>${adm?`<b class="${o.gan>=0?'pos':'neg'}">${fmt(o.gan)}</b>`:`<b>${fmt(o.s+o.g)}</b>`}</li>`).join(''):'<li class="muted">Sin movimientos en este período.</li>';
   $('#porTipo').innerHTML=S.porTipo.length?barras(S.porTipo,true):'<p class="muted">Sin cobros en este período.</p>';
   $('#porCat').innerHTML=S.porCat.length?barras(S.porCat):'<p class="muted">Sin gastos en este período.</p>';
 }
 function buildDoc(){
-  const S=stats(), adm=esAdmin(), n=new Date();
-  const movs=[...S.J.map(r=>({r,t:'jornadas'})),...S.G.map(r=>({r,t:'gastos'})),...(adm?[...S.C.map(r=>({r,t:'cobros'})),...S.A.map(r=>({r,t:'adelantos'}))]:[])].sort((a,b)=>b.r.fecha.localeCompare(a.r.fecha));
+  const S=stats(), adm=puede('ver_cobros'), vadel=puede('pagos','cargar_adelantos'), n=new Date();
+  const movs=[...S.J.map(r=>({r,t:'jornadas'})),...S.G.map(r=>({r,t:'gastos'})),...(adm?S.C.map(r=>({r,t:'cobros'})):[]),...(vadel?S.A.map(r=>({r,t:'adelantos'})):[])].sort((a,b)=>b.r.fecha.localeCompare(a.r.fecha));
   $('#paper').innerHTML=`
     <h1>Informe de gastos y pagos</h1>
     <div class="sub">Período: ${PER_TXT[per]} · Generado el ${fdh(n)} por ${esc(me.nombre)}</div>
@@ -1104,8 +1164,8 @@ function buildDoc(){
     <table><tr><th>Obra</th>${adm?'<th>Cobrado</th>':''}<th>Sueldos</th><th>Gastos</th>${adm?'<th>Ganancia</th>':''}</tr>
     ${S.porObra.map(o=>`<tr><td>${esc(o.nombre)}</td>${adm?`<td>${fmt(o.c)}</td>`:''}<td>${fmt(o.s)}</td><td>${fmt(o.g)}</td>${adm?`<td>${fmt(o.gan)}</td>`:''}</tr>`).join('')}</table>
     <h2>Trabajadores</h2>
-    <table><tr><th>Trabajador</th><th>Días</th><th>Horas</th><th>Extra</th><th>Sueldo</th>${adm?'<th>Adelantos</th><th>Saldo adel.</th>':''}</tr>
-    ${S.porTrab.map(x=>`<tr><td>${esc(x.t.nombre)}</td><td>${x.dias}</td><td>${x.horas}</td><td>${x.ext}</td><td>${fmt(x.sueldo)}</td>${adm?`<td>${fmt(x.adel)}</td><td>${fmt(x.saldo)}</td>`:''}</tr>`).join('')}</table>
+    <table><tr><th>Trabajador</th><th>Días</th><th>Horas</th><th>Extra</th><th>Sueldo</th>${vadel?'<th>Adelantos</th><th>Saldo adel.</th>':''}</tr>
+    ${S.porTrab.map(x=>`<tr><td>${esc(x.t.nombre)}</td><td>${x.dias}</td><td>${x.horas}</td><td>${x.ext}</td><td>${fmt(x.sueldo)}</td>${vadel?`<td>${fmt(x.adel)}</td><td>${fmt(x.saldo)}</td>`:''}</tr>`).join('')}</table>
     ${adm?`<h2>Cobros por tipo de trabajo</h2><table><tr><th>Tipo de trabajo</th><th>Total</th></tr>${S.porTipo.map(([c,v])=>`<tr><td>${esc(c)}</td><td>${fmt(v)}</td></tr>`).join('')||'<tr><td colspan="2">Sin cobros</td></tr>'}</table>`:''}
     <h2>Gastos por categoría</h2>
     <table><tr><th>Categoría</th><th>Total</th></tr>${S.porCat.map(([c,v])=>`<tr><td>${esc(c)}</td><td>${fmt(v)}</td></tr>`).join('')||'<tr><td colspan="2">Sin gastos</td></tr>'}</table>
@@ -1118,8 +1178,8 @@ $('#pdf').onclick=()=>{ buildDoc(); $('#doc').classList.add('open'); setTimeout(
 $('#docPdf').onclick=async()=>{ await fotosCargadas(); window.print(); };
 $('#docClose').onclick=()=>$('#doc').classList.remove('open');
 $('#csv').onclick=()=>{
-  const S=stats(), adm=esAdmin();
-  const xs=[...S.J.map(r=>({r,t:'jornadas'})),...S.G.map(r=>({r,t:'gastos'})),...(adm?[...S.C.map(r=>({r,t:'cobros'})),...S.A.map(r=>({r,t:'adelantos'}))]:[])].sort((a,b)=>b.r.fecha.localeCompare(a.r.fecha));
+  const S=stats(), adm=puede('ver_cobros'), vadel=puede('pagos','cargar_adelantos');
+  const xs=[...S.J.map(r=>({r,t:'jornadas'})),...S.G.map(r=>({r,t:'gastos'})),...(adm?S.C.map(r=>({r,t:'cobros'})):[]),...(vadel?S.A.map(r=>({r,t:'adelantos'})):[])].sort((a,b)=>b.r.fecha.localeCompare(a.r.fecha));
   const nom={jornadas:'Jornada',gastos:'Gasto',cobros:'Cobro',adelantos:'Adelanto'};
   const rows=[['Fecha','Tipo','Obra','Detalle','Monto','Cargado por']].concat(xs.map(({r,t})=>[fd(r.fecha),nom[t],r.obra_id!==undefined?obraN(r.obra_id):'',describe(r,t),Math.round(montoReg(r,t)),quien(r.cargado_por)]));
   const blob=new Blob(['﻿'+rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(';')).join('\n')],{type:'text/csv'});
@@ -1139,7 +1199,7 @@ function renderEq(){
   if(yo.admin_general && document.activeElement!==$('#aliasIn')) $('#aliasIn').value=yo.alias||'';
   const opT='<option value="">(sin ficha)</option>'+T.trabajadores.map(t=>`<option value="${t.id}">${esc(t.nombre)}</option>`).join('');
   $('#userList').innerHTML = T.perfiles.map(p=>`<li style="align-items:flex-start;flex-wrap:wrap"><span style="flex:1 1 100%"><b>${esc(p.nombre)}</b> <span class="muted">${esc(deEmail(p.email))}</span>${p.admin_general?' <span class="tag ok">Admin general</span>':''}</span>
-    <select data-urol="${p.id}" ${(p.id===me.id||p.admin_general)?'disabled':''} style="flex:1">${['admin','encargado','trabajador'].map(r=>`<option value="${r}" ${p.rol===r?'selected':''}>${{admin:'Administrador',encargado:'Encargado',trabajador:'Trabajador'}[r]}</option>`).join('')}</select>
+    <select data-urol="${p.id}" ${(p.id===me.id||p.admin_general)?'disabled':''} style="flex:1">${['admin','encargado','asistente','trabajador'].map(r=>`<option value="${r}" ${p.rol===r?'selected':''}>${ROL_LARGO[r]}</option>`).join('')}</select>
     <select data-utra="${p.id}" style="flex:1">${opT}</select></li>`).join('');
   T.perfiles.forEach(p=>{ const s=$(`[data-utra="${p.id}"]`); if(s) s.value=p.trabajador_id||''; });
   $$('[data-urol],[data-utra]').forEach(s=>s.onchange=async()=>{
@@ -1148,6 +1208,16 @@ function renderEq(){
     const {error}=await sb.from('perfiles').update({[campo]:v}).eq('id',id);
     if(error) return toast('Error: '+error.message);
     byId('perfiles',id)[campo]=v; toast('Usuario actualizado');
+  });
+  const RS=['encargado','asistente','trabajador'], tiene=(r,p)=>T.permisos_rol.some(x=>x.rol===r&&x.permiso===p);
+  $('#permTabla').innerHTML=PERMISOS.map(([p,txt])=>`<li style="display:block"><b>${txt}</b><div class="perm-roles">${RS.map(r=>`<label class="check"><input type="checkbox" data-perm-rol="${r}" data-perm-p="${p}" ${tiene(r,p)?'checked':''}> ${ROL_LARGO[r]}</label>`).join('')}</div></li>`).join('');
+  $$('[data-perm-rol]').forEach(c=>c.onchange=async()=>{
+    const rol=c.dataset.permRol, permiso=c.dataset.permP;
+    if(!await online()){ c.checked=!c.checked; return; }
+    const {error} = c.checked ? await sb.from('permisos_rol').insert({rol,permiso}) : await sb.from('permisos_rol').delete().eq('rol',rol).eq('permiso',permiso);
+    if(error && error.code!=='23505'){ c.checked=!c.checked; return toast('Error: '+error.message); }
+    T.permisos_rol=T.permisos_rol.filter(x=>!(x.rol===rol&&x.permiso===permiso)); if(c.checked) T.permisos_rol.push({rol,permiso});
+    store.set('go-cache',{me,T,en:Date.now()}); toast('Permiso guardado');
   });
 }
 function abrirTrab(id){
