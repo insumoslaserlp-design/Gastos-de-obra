@@ -87,6 +87,21 @@ pre.msg{white-space:pre-wrap;background:var(--bg);border-radius:10px;padding:12p
 .barrow{display:grid;grid-template-columns:96px 1fr 112px;gap:8px;align-items:center;font-size:13px;margin:6px 0}
 .bar{height:10px;border-radius:5px;background:var(--accent);min-width:2px}
 .bar.b2{background:var(--bar2)}
+/* Columnas: cuándo se trabaja más */
+.cols{display:flex;gap:2px;height:170px;align-items:stretch;margin-top:14px;border-bottom:1px solid var(--line)}
+.cols.neg{border-bottom:0}
+.col{flex:1;min-width:0;display:flex;flex-direction:column;cursor:pointer;position:relative;padding:0 1px}
+.col .up,.col .dn{display:flex;min-height:0}
+.col .up{align-items:flex-end}.col .dn{align-items:flex-start;border-top:1px solid var(--line)}
+.col .cb{width:100%;background:var(--accent);opacity:.55;border-radius:4px 4px 0 0;min-height:0}
+.col .dn .cb{background:var(--bad);border-radius:0 0 4px 4px}
+.col.max .cb{opacity:1}
+.col.sel .cb{outline:2px solid var(--ink);outline-offset:1px}
+.col .v{position:absolute;left:50%;transform:translateX(-50%);font-size:11px;font-weight:600;white-space:nowrap;color:var(--ink)}
+.col-lbl{display:flex;gap:2px;margin-top:4px}
+.col-lbl span{flex:1;min-width:0;text-align:center;font-size:11px;color:var(--muted);white-space:nowrap;overflow:visible}
+.tmp-info{margin:10px 0 0;font-size:14px}
+.tmp-sel{margin:6px 0 0;font-size:14px;min-height:20px;font-weight:600}
 .hide{display:none!important}
 .line{display:flex;justify-content:space-between;gap:10px;padding:6px 0;font-size:15px}
 .line.tot{border-top:1px solid var(--line);margin-top:6px;padding-top:10px;font-weight:700;font-size:17px}
@@ -470,6 +485,28 @@ input[type=date]{min-width:0;max-width:100%;display:block;-webkit-appearance:non
     </div>
     <div id="cmpBars" style="margin-top:10px"></div>
     <div class="scroll" style="margin-top:10px"><table class="t" id="cmpTable"></table></div>
+  </div>
+  <div class="card">
+    <h2>¿Cuándo se trabaja más?</h2>
+    <div class="seg" id="tmpAgr">
+      <button data-a="sem" class="on">Día de la semana</button>
+      <button data-a="dmes">Día del mes</button>
+      <button data-a="mes">Mes</button>
+    </div>
+    <div class="seg" id="tmpVal" style="margin-top:8px">
+      <button data-v="horas" class="on">Horas</button>
+      <button data-v="dias">Días</button>
+      <button data-v="sueldos">Sueldos</button>
+      <button data-v="gastos">Gastos</button>
+      <button data-v="cobros" data-perm="ver_cobros">Cobros</button>
+      <button data-v="gan" data-perm="ver_cobros">Ganancia</button>
+    </div>
+    <label>Trabajador</label>
+    <select id="tmpTrab"></select>
+    <p class="muted" id="tmpRango" style="margin:10px 0 0"></p>
+    <div id="tmpChart"></div>
+    <p class="tmp-sel" id="tmpSel"></p>
+    <p class="tmp-info" id="tmpInfo"></p>
   </div>
   <div class="card"><h2>Por obra</h2><ul class="list" id="porObra"></ul></div>
   <div class="card" data-perm="ver_cobros"><h2>Cobros por tipo de trabajo</h2><div id="porTipo"></div></div>
@@ -1593,6 +1630,59 @@ function stats(){
     return {t,dias,ext,horas,sueldo,adel,ph:horas?sueldo/horas:0,saldo:saldoAdel(t.id)};}).filter(x=>x.dias||x.adel||x.t.activo!==false);
   return {J,G,C,A,gastos,sueldos,cobros,gan:cobros-gastos-sueldos,porObra,porCat,porTipo,porTrab};
 }
+/* ¿Cuándo se trabaja más? Columnas por día de la semana, día del mes o mes */
+let tAgr='sem', tVal='horas';
+$$('#tmpAgr button').forEach(b=>b.onclick=()=>{tAgr=b.dataset.a; $$('#tmpAgr button').forEach(x=>x.classList.toggle('on',x===b)); renderTiempo();});
+$$('#tmpVal button').forEach(b=>b.onclick=()=>{tVal=b.dataset.v; $$('#tmpVal button').forEach(x=>x.classList.toggle('on',x===b)); renderTiempo();});
+$('#tmpTrab').onchange=()=>renderTiempo();
+const DSEM=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+const MES3=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const T_TXT={horas:'horas',dias:'días trabajados',sueldos:'sueldos',gastos:'gastos',cobros:'cobros',gan:'ganancia'};
+function renderTiempo(){
+  const adm=puede('ver_cobros'); if(!adm&&['cobros','gan'].includes(tVal)){ tVal='horas'; $$('#tmpVal button').forEach(x=>x.classList.toggle('on',x.dataset.v==='horas')); }
+  const keepT=$('#tmpTrab').value;
+  $('#tmpTrab').innerHTML='<option value="">Todos</option>'+T.trabajadores.map(t=>`<option value="${t.id}">${esc(t.nombre)}</option>`).join('');
+  if([...$('#tmpTrab').options].some(o=>o.value===keepT)) $('#tmpTrab').value=keepT;
+  const tid=$('#tmpTrab').value, porTrab=!!tid;
+  // ¿qué fechas entran? por mes: los últimos 12 meses; si no, el período de arriba
+  const hoy=new Date(hoyF()+'T12:00'), m0=new Date(hoy.getFullYear(),hoy.getMonth()-11,1,12), desde12=iso(m0);
+  const entra = f => { f=String(f).slice(0,10); return tAgr==='mes' ? f>=desde12&&f<=hoyF() : inPer(f); };
+  let keys, lbl, full, key;
+  if(tAgr==='sem'){ keys=[0,1,2,3,4,5,6]; lbl=k=>DSEM[k].slice(0,2); full=k=>DSEM[k]; key=f=>(new Date(f+'T12:00').getDay()+6)%7; }
+  else if(tAgr==='dmes'){ keys=[...Array(31)].map((_,i)=>i+1); lbl=k=>(k===1||k%5===0)?String(k):''; full=k=>'Día '+k; key=f=>+String(f).slice(8,10); }
+  else { keys=[...Array(12)].map((_,i)=>{ const d=new Date(m0.getFullYear(),m0.getMonth()+i,1,12); return iso(d).slice(0,7); }); lbl=k=>MES3[+k.slice(5,7)-1]; full=k=>`${MESES[+k.slice(5,7)-1]} ${k.slice(0,4)}`.replace(/^./,c=>c.toUpperCase()); key=f=>String(f).slice(0,7); }
+  const v=Object.fromEntries(keys.map(k=>[k,0])), add=(f,x)=>{ const k=key(String(f).slice(0,10)); if(k in v) v[k]+=x; };
+  const J=T.jornadas.filter(r=>aprobado(r)&&r.estado!=='pendiente'&&entra(r.fecha)&&(!porTrab||r.trabajador_id===tid));
+  const G=porTrab?[]:T.gastos.filter(r=>aprobado(r)&&r.estado!=='pendiente'&&entra(r.fecha));
+  const C=porTrab?[]:T.cobros.filter(r=>entra(r.fecha));
+  if(tVal==='horas') J.forEach(j=>add(j.fecha,horasJ(j)));
+  if(tVal==='dias') J.forEach(j=>add(j.fecha,trabajadoJ(j)?1:0));
+  if(tVal==='sueldos'||tVal==='gan') J.forEach(j=>add(j.fecha,tVal==='gan'?-jorTotal(j):jorTotal(j)));
+  if(tVal==='gastos'||tVal==='gan') G.forEach(g=>add(g.fecha,tVal==='gan'?-g.monto:+g.monto));
+  if(tVal==='cobros'||tVal==='gan') C.forEach(c=>add(c.fecha,+c.monto));
+  const din=['sueldos','gastos','cobros','gan'].includes(tVal), fv=x=>din?fmt(x):tVal==='horas'?fmtH(x)+' h':fmtH(x)+(Math.round(x)===1?' día':' días');
+  $('#tmpRango').textContent=(tAgr==='mes'?'Últimos 12 meses':'Período: '+PER_TXT[per])+(porTrab?` · ${trabN(tid)}`:'')+(porTrab&&['gastos','cobros','gan'].includes(tVal)?' (gastos y cobros no son por trabajador)':'');
+  const vals=keys.map(k=>v[k]), maxP=Math.max(0,...vals), maxN=Math.max(0,...vals.map(x=>-x)), tot=vals.reduce((a,x)=>a+x,0);
+  if(!vals.some(x=>x)){ $('#tmpChart').innerHTML='<p class="muted" style="margin:14px 0 0">No hay datos para mostrar en este período.</p>'; $('#tmpSel').textContent=''; $('#tmpInfo').textContent=''; return; }
+  const zona=maxP+maxN, upPct=zona?maxP/zona*100:100, iMax=vals.indexOf(maxP>0?maxP:Math.min(...vals));
+  $('#tmpChart').innerHTML=`<div class="cols ${maxN?'neg':''}">${keys.map((k,i)=>{ const x=vals[i];
+      const up=x>0&&maxP?x/maxP*100:0, dn=x<0&&maxN?-x/maxN*100:0;
+      return `<div class="col ${i===iMax?'max':''}" data-i="${i}" title="${esc(full(k))}: ${fv(x)}" aria-label="${esc(full(k))}: ${fv(x)}">
+        <div class="up" style="height:${upPct}%"><div class="cb" style="height:${up}%"></div></div>
+        ${maxN?`<div class="dn" style="height:${100-upPct}%"><div class="cb" style="height:${dn}%"></div></div>`:''}
+        ${i===iMax?`<span class="v" style="top:${maxP>0?Math.max(0,upPct*(1-up/100)-1)+'%;transform:translate(-50%,-110%)':'auto;bottom:0'}">${tAgr==='dmes'?'':fv(x)}</span>`:''}</div>`; }).join('')}</div>
+    <div class="col-lbl">${keys.map(k=>`<span>${lbl(k)}</span>`).join('')}</div>`;
+  const sel=i=>{ $$('#tmpChart .col').forEach(c=>c.classList.toggle('sel',+c.dataset.i===i)); $('#tmpSel').textContent=`${full(keys[i])}: ${fv(vals[i])}`; };
+  $$('#tmpChart .col').forEach(c=>{ c.onclick=()=>sel(+c.dataset.i); c.onmouseenter=()=>sel(+c.dataset.i); });
+  sel(iMax);
+  // Lo más útil en una línea: el mejor, el peor con datos y el promedio
+  const conDatos=keys.map((k,i)=>[k,vals[i]]).filter(([,x])=>x);
+  const peor=conDatos.reduce((a,b)=>b[1]<a[1]?b:a);
+  const prom=tot/(tAgr==='mes'?keys.length:conDatos.length||1);
+  $('#tmpInfo').innerHTML=`Más ${tVal==='gan'?'ganancia':T_TXT[tVal]}: <b>${esc(full(keys[iMax]))}</b> (${fv(vals[iMax])}). `+
+    (conDatos.length>1?`Menos: <b>${esc(full(peor[0]))}</b> (${fv(peor[1])}). `:'')+
+    `Total ${fv(tot)} · promedio ${fv(prom)} por ${tAgr==='mes'?'mes':tAgr==='sem'?'día de la semana con datos':'día con datos'}.`;
+}
 function barras(arr,b2){ const mx=Math.max(1,...arr.map(x=>x[1])); return arr.map(([c,v,l])=>`<div class="barrow"><span>${esc(c)}</span><div class="bar ${b2?'b2':''}" style="width:${v/mx*100}%"></div><span style="text-align:right">${l??fmt(v)}</span></div>`).join(''); }
 function renderInf(){
   if(!puede('ver_informes','ver_cobros')) return;
@@ -1606,6 +1696,7 @@ function renderInf(){
   $('#porObra').innerHTML=S.porObra.length?S.porObra.map(o=>`<li><span><b>${esc(o.nombre)}</b><br><span class="muted">${o.h?`${fmtH(o.h)} h · `:''}${adm?`Cobro ${fmt(o.c)} · `:''}Sueldos ${fmt(o.s)} · Gastos ${fmt(o.g)}</span></span>${adm?`<b class="${o.gan>=0?'pos':'neg'}">${fmt(o.gan)}</b>`:`<b>${fmt(o.s+o.g)}</b>`}</li>`).join(''):'<li class="muted">Sin movimientos en este período.</li>';
   $('#porTipo').innerHTML=S.porTipo.length?barras(S.porTipo,true):'<p class="muted">Sin cobros en este período.</p>';
   $('#porCat').innerHTML=S.porCat.length?barras(S.porCat):'<p class="muted">Sin gastos en este período.</p>';
+  renderTiempo();
 }
 function buildDoc(){
   const S=stats(), adm=puede('ver_cobros'), vadel=puede('pagos','cargar_adelantos'), n=new Date();
