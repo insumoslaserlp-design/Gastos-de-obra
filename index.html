@@ -2024,7 +2024,7 @@ async function elegirEmpresa(id){
   if(cola.length) return toast('Primero esperá que se suban las cargas pendientes');
   if(!await online()) return;
   const {error}=await sb.rpc('entrar_empresa',{p_empresa:id});
-  if(error) return toast('Error: '+error.message);
+  if(error && id) return toast(/entrar_empresa|function/i.test(error.message)?'Falta correr en Supabase el archivo 11 (creador y bajas)':'Error: '+error.message);
   try{ sessionStorage.setItem('go-elegido','1'); }catch(e){}
   store.del('go-cache'); location.reload();
 }
