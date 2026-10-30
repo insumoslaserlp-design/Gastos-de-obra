@@ -763,7 +763,7 @@ $('#tipoOk').onclick=()=>agregarNombre('tipos_trabajo','#tipoNew','#tipoAdd',id=
 function setTipo(t){
   tipo=t; $$('#tipoSeg button').forEach(x=>x.classList.toggle('on',x.dataset.t===t));
   $('#obraBox').classList.toggle('hide',t==='adelanto');
-  $('#obraIn').placeholder = t==='gasto' ? 'Escribí o elegí la obra (vacío = gasto general)' : 'Escribí o elegí la obra';
+  $('#obraIn').placeholder = (esAdmin()?'Escribí o elegí la obra':'Elegí la obra') + (t==='gasto'?' (vacío = gasto general)':'');
   ['gasto','jornada','adelanto','cobro'].forEach(x=>$('#f-'+x).classList.toggle('hide',x!==t)); calcForm();
 }
 $$('#tipoSeg button').forEach(b=>b.onclick=()=>{ setTipo(b.dataset.t); saveDraft(); });
@@ -812,13 +812,16 @@ function obraIdPara(nombre){
   const n=String(nombre||'').trim().replace(/\s+/g,' ');
   if(!n) return null;
   const ya=obraExistente(n); if(ya) return ya.id;
+  if(!esAdmin()) return null;
   const id=(crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx'.replace(/x/g,()=>(Math.random()*16|0).toString(16)));
   T.obras.push({id,nombre:n,activa:true,_pend:true});
   cola.push({tabla:'obras',fila:{id,nombre:n}}); guardarCola();
   $('#obrasList').insertAdjacentHTML('beforeend',`<option value="${esc(n)}">`);
   return id;
 }
-$('#obraIn').addEventListener('input',()=>{ const v=$('#obraIn').value.trim(); $('#obraAyuda').textContent = v && !obraExistente(v) ? `Obra nueva: se va a crear "${v}" al guardar.` : ''; });
+$('#obraIn').addEventListener('input',()=>{ const v=$('#obraIn').value.trim(); $('#obraAyuda').textContent = v && !obraExistente(v) ? (esAdmin() ? `Obra nueva: se va a crear "${v}" al guardar.` : 'Esa obra no está en la lista. Elegí una o pedile al administrador que la cree.') : ''; });
+// Solo el administrador puede crear obras nuevas escribiendo el nombre
+function obraValida(){ const v=$('#obraIn').value.trim(); if(!v || esAdmin() || obraExistente(v)) return true; toast('Esa obra no existe. Elegí una de la lista o pedile al administrador que la cree.'); $('#obraIn').focus(); return false; }
 // Foto: cámara o galería
 let fotoFile=null;
 function ponerFoto(f){ fotoFile=f||null; $('#fotoPrev').classList.toggle('hide',!fotoFile); if(fotoFile){ $('#fotoImg').src=URL.createObjectURL(fotoFile); } }
@@ -836,6 +839,7 @@ function comprimir(file){
 }
 $('#guardar').onclick=async()=>{
   const id_local=uidLocal(); let tabla, fila, foto=null;
+  if(tipo!=='adelanto' && !obraValida()) return;
   if(tipo==='gasto'){
     const m=num($('#g-monto').value); if(!m) return toast('Poné el monto'); if(!catId) return toast('Elegí una categoría');
     if(fotoFile){ try{ foto=await comprimir(fotoFile); }catch(e){ toast('No se pudo leer la foto'); } }

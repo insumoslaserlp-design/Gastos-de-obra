@@ -1,11 +1,12 @@
 -- =====================================================================
--- Gastos de Obra · parte 4: obras escritas a mano y borrar comprobantes
+-- Gastos de Obra · parte 4: obras y borrar comprobantes
 -- Correr en el SQL Editor DESPUÉS de las partes 1, 2 y 3.
+-- Se puede volver a correr sin problema.
 -- =====================================================================
 
--- Cualquiera que haya entrado puede crear una obra nueva al escribir su nombre
+-- Solo el administrador crea obras (ya lo permite su permiso general).
+-- Si una versión anterior de este archivo dejaba crearlas a todos, se quita.
 drop policy if exists cargar_obras on obras;
-create policy cargar_obras on obras for insert to authenticated with check (auth.uid() is not null);
 
 -- El administrador puede borrar fotos de comprobantes (cuando borra un gasto)
 drop policy if exists borrar_comprobante on storage.objects;
