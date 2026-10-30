@@ -1001,9 +1001,12 @@ const recDia = (t,dia) => dia==='sabado' ? +t.recargo_sabado : (dia==='domingo'|
 const valorExtraDia = (t,dia) => valorExtra(t)*(1+recDia(t,dia)/100);
 function tipoDia(f,fer){ if(fer || T.feriados.some(x=>x.fecha===f)) return 'feriado'; const w=new Date(f+'T12:00').getDay(); return w===6?'sabado':w===0?'domingo':'habil'; }
 const DIA_TXT={habil:'día hábil',sabado:'sábado',domingo:'domingo',feriado:'feriado'};
-function jorTotal(j){ if(!trabajadoJ(j)) return 0; if(j.total!=null) return +j.total; const t=byId('trabajadores',j.trabajador_id); return t ? +t.precio_jornada + (+j.horas_extra||0)*valorExtraDia(t,j.dia||tipoDia(j.fecha)) : 0; }
+function jorTotal(j){ if(!trabajadoJ(j)) return 0; if(j.total!=null) return +j.total; const t=byId('trabajadores',j.trabajador_id); return t ? jorPrecio(j) + (+j.horas_extra||0)*valorExtraDia(t,j.dia||tipoDia(j.fecha)) : 0; }
 function jorValorExtra(j){ if(j.valor_hora_extra!=null) return +j.valor_hora_extra; const t=byId('trabajadores',j.trabajador_id); return t?valorExtraDia(t,j.dia||tipoDia(j.fecha)):0; }
-function jorPrecio(j){ if(!trabajadoJ(j)) return 0; if(j.precio_jornada!=null) return +j.precio_jornada; return +(byId('trabajadores',j.trabajador_id)?.precio_jornada||0); }
+// Día con menos horas que la jornada: se paga proporcional (MIN_JORNADA = fracción mínima que se paga)
+const MIN_JORNADA = 0;
+function precioDia(t,h){ const pj=+t.precio_jornada, hj=+t.horas_jornada||8; return h>0&&h<hj ? Math.round(pj*Math.max(h,hj*MIN_JORNADA)/hj*100)/100 : pj; }
+function jorPrecio(j){ if(!trabajadoJ(j)) return 0; if(j.precio_jornada!=null) return +j.precio_jornada; const t=byId('trabajadores',j.trabajador_id); return t?precioDia(t,+j.horas||0):0; }
 const saldoAdel = tid => T.adelantos.filter(r=>r.trabajador_id===tid).reduce((a,r)=>a+ +r.monto,0) + aCuenta(tid).reduce((a,r)=>a+ +r.monto,0) - T.pagos.filter(r=>r.trabajador_id===tid).reduce((a,r)=>a+ +r.descuento_adelanto,0);
 const aprobado = r => r.estado!=='rechazado';
 
@@ -1093,7 +1096,8 @@ function calcForm(){
     const auto=T.feriados.some(x=>x.fecha===f);
     const dia=tipoDia(f,$('#j-fer').checked), ve=valorExtraDia(t,dia), rc=recDia(t,dia);
     $('#j-dia').textContent=`Día: ${DIA_TXT[dia]}${auto?' (feriado nacional)':''}${rc?` · hora extra con ${rc}% más`:''}`;
-    $('#j-calc').textContent = esTrab()||jEstado!=='trabajado' ? '' : `Jornada ${fmt(t.precio_jornada)} (${fmt(valorHora(t))}/h)` + (e?` + ${fmtH(e)} h extra × ${fmt(ve)} = ${fmt(+t.precio_jornada+e*ve)}`:'');
+    const pd=precioDia(t,h);
+    $('#j-calc').textContent = esTrab()||jEstado!=='trabajado' ? '' : pd<+t.precio_jornada ? `Día corto: ${fmtH(h)} h × ${fmt(valorHora(t))} = ${fmt(pd)} (la jornada entera es ${fmt(t.precio_jornada)})` : `Jornada ${fmt(t.precio_jornada)} (${fmt(valorHora(t))}/h)` + (e?` + ${fmtH(e)} h extra × ${fmt(ve)} = ${fmt(+t.precio_jornada+e*ve)}`:'');
   } else { $('#j-dia').textContent=''; $('#j-calc').textContent=''; $('#j-tot').innerHTML=''; }
   const tk=byId('trabajadores',$('#k-trab').value);
   if(tk){ const s=saldoCaja(tk.id), m=num($('#k-monto').value); $('#k-saldo').textContent=`Caja de ${tk.nombre}: ${fmt(s)}`+(m?` → queda en ${fmt(s+m)}`:''); }
@@ -1380,8 +1384,11 @@ function liq(t){
   const g={}; js.forEach(r=>{ const h=+r.horas_extra; if(!h) return; const k=(r.dia==='domingo'||r.dia==='feriado')?'domfer':(r.dia||'habil'); const v=jorValorExtra(r); const kk=k+'|'+v; g[kk]=g[kk]||{k,h:0,v}; g[kk].h+=h; });
   const ext2=Object.values(g).sort((a,b)=>['habil','sabado','domfer'].indexOf(a.k)-['habil','sabado','domfer'].indexOf(b.k)).map(x=>({...x,txt:{habil:'día hábil',sabado:'sábado',domfer:'domingo/feriado'}[x.k],m:x.h*x.v}));
   const extM=ext2.reduce((a,x)=>a+x.m,0), ext=ext2.reduce((a,x)=>a+x.h,0);
-  const precios=[...new Set(js.filter(trabajadoJ).map(jorPrecio))];
-  return {js,dias,ext,ext2,jor,extM,bruto:jor+extM,precioTxt:precios.length===1?fmt(precios[0]):'varios precios'};
+  const full=+t.precio_jornada, corto=j=>trabajadoJ(j)&&jorPrecio(j)<full-0.005;
+  const jc=js.filter(j=>trabajadoJ(j)&&!corto(j)), jk=js.filter(corto);
+  const precios=[...new Set(jc.map(jorPrecio))];
+  const cortos={n:jk.length,h:jk.reduce((a,j)=>a+(+j.horas||0),0),m:jk.reduce((a,j)=>a+jorPrecio(j),0)};
+  return {js,dias,diasC:jc.length,mC:jc.reduce((a,j)=>a+jorPrecio(j),0),cortos,ext,ext2,jor,extM,bruto:jor+extM,precioTxt:precios.length===1?fmt(precios[0]):'varios precios'};
 }
 function renderPagos(){
   if(!puede('pagos')) return;
@@ -1411,7 +1418,8 @@ function openLiq(tid){
   if(!l.dias){ toast('No hay jornadas aprobadas sin pagar en este período'); return; }
   liqCod=codigo();
   $('#liq-title').textContent='Liquidación de '+liqT.nombre;
-  $('#liqLines').innerHTML=`<div class="line"><span>Jornadas: ${l.dias} × ${l.precioTxt}</span><span>${fmt(l.jor)}</span></div>`+
+  $('#liqLines').innerHTML=(l.diasC?`<div class="line"><span>Jornadas: ${l.diasC} × ${l.precioTxt}</span><span>${fmt(l.mC)}</span></div>`:'')+
+    (l.cortos.n?`<div class="line"><span>Días cortos: ${l.cortos.n} (${fmtH(l.cortos.h)} h)</span><span>${fmt(l.cortos.m)}</span></div>`:'')+
     l.ext2.map(x=>`<div class="line"><span>Horas extra ${x.txt}: ${x.h} h × ${fmt(x.v)}</span><span>${fmt(x.m)}</span></div>`).join('')+
     `<div class="line" style="font-weight:600"><span>Subtotal</span><span>${fmt(l.bruto)}</span></div>`;
   $('#advBox').classList.toggle('hide',s<=0);
@@ -1426,7 +1434,8 @@ function mensaje(){
   const l=liq(liqT), d=descVal(), s=saldoAdel(liqT.id), [a,b]=rango();
   const L='────────────────';
   let m=`*${cfg('wa_titulo')}*\n${L}\n*Trabajador:* ${liqT.nombre}\n*Período:* ${a===b?fd(a):fd(a)+' al '+fd(b)}\n${L}\n`;
-  m+=`*Jornadas:* ${l.dias} × ${l.precioTxt} = ${fmt(l.jor)}\n`;
+  if(l.diasC) m+=`*Jornadas:* ${l.diasC} × ${l.precioTxt} = ${fmt(l.mC)}\n`;
+  if(l.cortos.n) m+=`*Días cortos:* ${l.cortos.n} (${fmtH(l.cortos.h)} h) = ${fmt(l.cortos.m)}\n`;
   l.ext2.forEach(x=>{ m+=`*Horas extra (${x.txt}):* ${x.h} h × ${fmt(x.v)} = ${fmt(x.m)}\n`; });
   m+=`*Subtotal:* ${fmt(l.bruto)}\n`;
   if(d) m+=`*Descuento por adelantos${aCuenta(liqT.id).length?' y gastos a cuenta':''}:* −${fmt(d)}\n`;
