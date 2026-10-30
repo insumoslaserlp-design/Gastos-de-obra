@@ -1419,7 +1419,7 @@ function openLiq(tid){
   liqCod=codigo();
   $('#liq-title').textContent='Liquidación de '+liqT.nombre;
   $('#liqLines').innerHTML=(l.diasC?`<div class="line"><span>Jornadas: ${l.diasC} × ${l.precioTxt}</span><span>${fmt(l.mC)}</span></div>`:'')+
-    (l.cortos.n?`<div class="line"><span>Días cortos: ${l.cortos.n} (${fmtH(l.cortos.h)} h)</span><span>${fmt(l.cortos.m)}</span></div>`:'')+
+    (l.cortos.n?`<div class="line"><span>Días cortos: ${fmtH(l.cortos.h)} h × ${fmt(valorHora(liqT))}</span><span>${fmt(l.cortos.m)}</span></div>`:'')+
     l.ext2.map(x=>`<div class="line"><span>Horas extra ${x.txt}: ${x.h} h × ${fmt(x.v)}</span><span>${fmt(x.m)}</span></div>`).join('')+
     `<div class="line" style="font-weight:600"><span>Subtotal</span><span>${fmt(l.bruto)}</span></div>`;
   $('#advBox').classList.toggle('hide',s<=0);
@@ -1432,11 +1432,23 @@ function openLiq(tid){
 function descVal(){ const l=liq(liqT), s=saldoAdel(liqT.id); return Math.max(0,Math.min(num($('#advDesc').value),s,l.bruto)); }
 function mensaje(){
   const l=liq(liqT), d=descVal(), s=saldoAdel(liqT.id), [a,b]=rango();
-  const L='────────────────';
-  let m=`*${cfg('wa_titulo')}*\n${L}\n*Trabajador:* ${liqT.nombre}\n*Período:* ${a===b?fd(a):fd(a)+' al '+fd(b)}\n${L}\n`;
-  if(l.diasC) m+=`*Jornadas:* ${l.diasC} × ${l.precioTxt} = ${fmt(l.mC)}\n`;
-  if(l.cortos.n) m+=`*Días cortos:* ${l.cortos.n} (${fmtH(l.cortos.h)} h) = ${fmt(l.cortos.m)}\n`;
-  l.ext2.forEach(x=>{ m+=`*Horas extra (${x.txt}):* ${x.h} h × ${fmt(x.v)} = ${fmt(x.m)}\n`; });
+  const L='────────────────', titulo=String(cfg('wa_titulo')).replace(/\*/g,'').trim();
+  const hj=+liqT.horas_jornada||8, vh=valorHora(liqT);
+  let m=`*${titulo}*\n${L}\n*Trabajador:* ${liqT.nombre}\n*Período:* ${a===b?fd(a):fd(a)+' al '+fd(b)}\n${L}\n`;
+  // Detalle día por día: dónde, horas y extras
+  m+=`*Detalle por día:*\n`;
+  [...l.js].sort((x,y)=>x.fecha.localeCompare(y.fecha)).forEach(j=>{
+    if(!trabajadoJ(j)){ m+=`• ${fd(j.fecha)} · ${ESTADO_DIA[j.estado_dia]||''}\n`; return; }
+    const donde=(j.tramos&&j.tramos.length)?j.tramos.map(t=>obraTramo(t)||t.trabajo||'').filter(Boolean).join(' / '):(j.obra_id?obraN(j.obra_id):'');
+    const h=horasJ(j), e=+j.horas_extra||0;
+    m+=`• ${fd(j.fecha)}${j.dia&&j.dia!=='habil'?' ('+(DIA_TXT[j.dia]||j.dia)+')':''}${donde?' · '+donde:''} · ${fmtH(h)} h${e?` (${fmtH(h-e)} + ${fmtH(e)} extra)`:''} · ${fmt(jorTotal(j))}\n`;
+  });
+  const hTot=l.js.reduce((x,j)=>x+horasJ(j),0);
+  m+=`${L}\n*Horas trabajadas:* ${fmtH(hTot)} h${l.ext?` (${fmtH(hTot-l.ext)} normales + ${fmtH(l.ext)} extra)`:''}\n`;
+  m+=`*Jornada:* ${fmt(liqT.precio_jornada)} por ${fmtH(hj)} h · *Valor hora:* ${fmt(vh)}\n${L}\n`;
+  if(l.diasC) m+=`*Jornadas completas:* ${l.diasC} × ${l.precioTxt} = ${fmt(l.mC)}\n`;
+  if(l.cortos.n) m+=`*Días cortos:* ${fmtH(l.cortos.h)} h × ${fmt(vh)} = ${fmt(l.cortos.m)}\n`;
+  l.ext2.forEach(x=>{ m+=`*Horas extra (${x.txt}):* ${fmtH(x.h)} h × ${fmt(x.v)} = ${fmt(x.m)}\n`; });
   m+=`*Subtotal:* ${fmt(l.bruto)}\n`;
   if(d) m+=`*Descuento por adelantos${aCuenta(liqT.id).length?' y gastos a cuenta':''}:* −${fmt(d)}\n`;
   m+=`${L}\n*TOTAL A COBRAR: ${fmt(l.bruto-d)}*\n${L}\n`;
