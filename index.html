@@ -184,6 +184,13 @@ input[type=date]{min-width:0;max-width:100%;display:block;-webkit-appearance:non
 .slug-row input{flex:1;min-width:0}
 .emp-acc{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .emp-acc button{font-size:13px;padding:6px 10px}
+.crebar{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--line);background:var(--card,var(--bg));border-radius:10px;padding:8px 10px;margin-bottom:12px;font-size:14px}
+.crebar .btn{margin-top:0}
+.el-emp{display:flex;flex-direction:column;gap:2px;text-align:left}
+.el-emp small{font-weight:400;opacity:.8}
+dialog#dlg{border:0;border-radius:14px;padding:18px;max-width:min(420px,calc(100vw - 32px));background:var(--card,#fff);color:var(--ink)}
+dialog#dlg::backdrop{background:rgba(0,0,0,.45)}
+dialog#dlg h2{margin:0 0 8px}
 </style>
 </head>
 <body>
@@ -206,6 +213,17 @@ input[type=date]{min-width:0;max-width:100%;display:block;-webkit-appearance:non
     <p class="muted" id="pausaTxt"></p>
     <button class="btn ghost" id="pausaSalir">Salir</button>
   </div>
+  <p class="firma">App creada por <b>BR Soluciones</b></p>
+</div>
+
+<!-- ======= Creador: a dónde entrar ======= -->
+<div id="s-elegir" class="center hide">
+  <img class="brand-logo" src="logo.png" alt="Clarita la Cuenta" width="230" height="231" style="width:min(140px,40vw)">
+  <div class="card">
+    <h2>¿A dónde querés entrar?</h2>
+    <div id="elList"><p class="muted">Cargando empresas…</p></div>
+  </div>
+  <button class="btn ghost" id="elSalir" style="max-width:420px">Cerrar sesión</button>
   <p class="firma">App creada por <b>BR Soluciones</b></p>
 </div>
 
@@ -243,6 +261,7 @@ input[type=date]{min-width:0;max-width:100%;display:block;-webkit-appearance:non
 
 <main>
 <!-- CARGAR -->
+<div class="crebar hide" id="creBar"><span id="creTxt"></span><button class="btn ghost sm" id="creCambiar">Cambiar</button></div>
 <section id="v-cargar">
     <div class="note hide" id="colaBox"></div>
   <div class="card hide" id="pendCard">
@@ -550,6 +569,7 @@ input[type=date]{min-width:0;max-width:100%;display:block;-webkit-appearance:non
     <label class="check"><input type="checkbox" id="te-activo"> Activo</label>
     <button class="btn" id="te-save">Guardar</button>
     <button class="btn ghost" id="te-cancel">Cancelar</button>
+    <button class="btn bad" id="te-baja">Dar de baja a este trabajador</button>
   </div>
   <div class="card">
     <h2>Obras</h2>
@@ -663,6 +683,7 @@ input[type=date]{min-width:0;max-width:100%;display:block;-webkit-appearance:non
 <p class="firma">App creada por <b>BR Soluciones</b></p>
 </main>
 
+<dialog id="dlg"><h2 id="dlgTit"></h2><p class="muted" id="dlgTxt"></p><div id="dlgBtns"></div></dialog>
 <nav id="nav">
   <button data-v="cargar" class="on" data-perm="cargar_gastos cargar_jornadas cargar_adelantos cargar_cobros"><span>＋</span>Cargar</button>
   <button data-v="mios"><span>💵</span>Mi detalle</button>
@@ -785,7 +806,7 @@ const store = {
   del(k){ try{ localStorage.removeItem(k); }catch(e){} }
 };
 let toastT; function toast(t){ const el=$('#toast'); el.textContent=t; el.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),2600); }
-function show(id){ ['s-confirmar','s-login','s-app','s-pausa'].forEach(s=>$('#'+s).classList.toggle('hide',s!==id)); }
+function show(id){ ['s-confirmar','s-login','s-app','s-pausa','s-elegir'].forEach(s=>$('#'+s).classList.toggle('hide',s!==id)); }
 function lunes(){ const d=new Date(); d.setDate(d.getDate()-((d.getDay()+6)%7)); return iso(d); }
 const APP_URL = location.href.split(/[?#]/)[0];
 
@@ -906,7 +927,7 @@ $('#pausaSalir').onclick=()=>cerrarSesion(true);
 $('#who').onclick=async()=>{ if(!confirm('¿Cerrar sesión?')) return; if(cola.length && !confirm('Hay cargas sin subir. Si salís ahora se pierden. ¿Salir igual?')) return; await cerrarSesion(true); };
 async function cerrarSesion(borrarCola){
   try{ await sb?.auth.signOut(); }catch(e){}
-  store.del('go-cache'); store.del('go-login-at');
+  store.del('go-cache'); store.del('go-login-at'); try{ sessionStorage.removeItem('go-elegido'); }catch(e){}
   if(borrarCola){ store.del('go-cola'); cola=[]; }
   me=null; show('s-login');
 }
@@ -955,7 +976,8 @@ async function iniciar(){
   await cargarDatos();
   if(!me){ show('s-login'); return; }
   if(await vencioAdmin()) return;
-  if(me.empresa && !me.empresa.activa){
+  if(me.creador && !yaElegido()) return pantallaElegir();
+  if(me.empresa && !me.empresa.activa && !me.creador){
     $('#pausaTit').textContent = me.empresa.nombre;
     $('#pausaTxt').textContent = `La cuenta de tu empresa está pausada o venció. Comunicate con ${cfg('firma_marca')} para reactivarla.`;
     show('s-pausa'); return;
@@ -970,7 +992,10 @@ function aplicarRol(){
   $('#who').textContent = `${me.nombre} · ${!me.empresa_id&&me.creador?'Creador':(ROL_TXT[me.rol]||me.rol)}`;
   $$('[data-perm]').forEach(el=>el.classList.toggle('hide', !puede(...el.dataset.perm.split(' '))));
   $('#nav [data-v="panel"]').classList.toggle('hide', !me.creador);
-  if(!me.empresa_id) $$('#nav button').forEach(b=>b.classList.toggle('hide', b.dataset.v!=='panel'));
+  const viendo = me.creador && !me.empresa_id && me.viendo_empresa && me.empresa;
+  if(!me.empresa_id && !viendo) $$('#nav button').forEach(b=>b.classList.toggle('hide', b.dataset.v!=='panel'));
+  $('#creBar').classList.toggle('hide', !me.creador);
+  if(me.creador) $('#creTxt').innerHTML = viendo ? `Estás en <b>${esc(me.empresa.nombre)}</b>` : 'Estás en el <b>Panel general</b>';
   // "Mi detalle" se ve si tiene ficha de trabajador, o si no tiene ninguna otra pantalla
   const otras = ['cargar','pagos','inf','eq','panel'].some(v=>!$(`#nav [data-v="${v}"]`).classList.contains('hide'));
   $('#nav [data-v="mios"]').classList.toggle('hide', !me.trabajador_id && otras);
@@ -1743,15 +1768,15 @@ function renderEq(){
     $('#meNombre').textContent=em.nombre; $('#meLink').value=linkEmpresa(em.slug);
     if(document.activeElement!==$('#meFirma')) $('#meFirma').value=em.firma||'';
   }
-  $('#trabList').innerHTML = T.trabajadores.length ? T.trabajadores.map(t=>`<li data-id="${t.id}" style="cursor:pointer"><span><b>${esc(t.nombre)}</b>${t.activo===false?' <span class="tag">inactivo</span>':''}<br><span class="muted">${fmt(t.precio_jornada)} / ${+t.horas_jornada} h · ${fmt(valorHora(t))}/h · ${t.frecuencia==='dia'?'por día':'por semana'}${t.telefono?'':' · sin WhatsApp'}</span></span><span class="tag">${t.extra_modo==='igual'?'Extra igual':t.extra_modo==='porcentaje'?'Extra +'+(+t.extra_porcentaje)+'%':'Extra fijo'}</span></li>`).join('') : '<li class="muted">Todavía no hay trabajadores.</li>';
+  $('#trabList').innerHTML = T.trabajadores.length ? T.trabajadores.map(t=>`<li data-id="${t.id}" style="cursor:pointer"><span><b>${esc(t.nombre)}</b>${t.activo===false?' <span class="tag">dado de baja</span>':''}<br><span class="muted">${fmt(t.precio_jornada)} / ${+t.horas_jornada} h · ${fmt(valorHora(t))}/h · ${t.frecuencia==='dia'?'por día':'por semana'}${t.telefono?'':' · sin WhatsApp'}</span></span><span class="tag">${t.extra_modo==='igual'?'Extra igual':t.extra_modo==='porcentaje'?'Extra +'+(+t.extra_porcentaje)+'%':'Extra fijo'}</span></li>`).join('') : '<li class="muted">Todavía no hay trabajadores.</li>';
   $$('#trabList li[data-id]').forEach(li=>li.onclick=()=>abrirTrab(li.dataset.id));
   $('#obraList').innerHTML = T.obras.map(o=>`<li><span>${esc(o.nombre)}</span><button class="btn ghost sm" data-obra="${o.id}">${o.activa!==false?'Terminar':'Reactivar'}</button></li>`).join('') || '<li class="muted">Todavía no hay obras.</li>';
   $$('[data-obra]').forEach(b=>b.onclick=()=>toggleActivo('obras',b.dataset.obra,'activa').then(renderEq));
   const yo=byId('perfiles',me.id)||me;
-  $('#aliasCard').classList.toggle('hide',!yo.admin_general);
+  $('#aliasCard').classList.toggle('hide',!yo.admin_general||!!me.creador);
   if(yo.admin_general && document.activeElement!==$('#aliasIn')) $('#aliasIn').value=yo.alias||'';
   const opT='<option value="">(sin ficha)</option>'+T.trabajadores.map(t=>`<option value="${t.id}">${esc(t.nombre)}</option>`).join('');
-  $('#userList').innerHTML = T.perfiles.map(p=>`<li style="align-items:flex-start;flex-wrap:wrap"><span style="flex:1 1 100%"><b>${esc(p.nombre)}</b> <span class="muted">${esc(deEmail(p.email))}</span>${p.admin_general?' <span class="tag ok">Admin general</span>':''}</span>
+  $('#userList').innerHTML = T.perfiles.filter(p=>!p.creador).map(p=>`<li style="align-items:flex-start;flex-wrap:wrap"><span style="flex:1 1 100%"><b>${esc(p.nombre)}</b> <span class="muted">${esc(deEmail(p.email))}</span>${p.admin_general?' <span class="tag ok">Admin general</span>':''}</span>
     <select data-urol="${p.id}" ${(p.id===me.id||p.admin_general)?'disabled':''} style="flex:1">${['admin','encargado','asistente','trabajador'].map(r=>`<option value="${r}" ${p.rol===r?'selected':''}>${ROL_LARGO[r]}</option>`).join('')}</select>
     <select data-utra="${p.id}" style="flex:1">${opT}</select></li>`).join('');
   T.perfiles.forEach(p=>{ const s=$(`[data-utra="${p.id}"]`); if(s) s.value=p.trabajador_id||''; });
@@ -1776,6 +1801,7 @@ function renderEq(){
 function abrirTrab(id){
   editId=id; const t=id?byId('trabajadores',id):{nombre:'',telefono:'',precio_jornada:'',horas_jornada:8,extra_modo:'igual',extra_porcentaje:50,extra_fijo:0,recargo_sabado:0,recargo_domingo:0,frecuencia:'semana',activo:true};
   $('#te-title').textContent=id?'Editar a '+t.nombre:'Nuevo trabajador';
+  $('#te-baja').classList.toggle('hide',!id||t.activo===false);
   $('#te-nombre').value=t.nombre; $('#te-tel').value=t.telefono||''; if(t.precio_jornada==='') $('#te-precio').value=''; else setMoney('#te-precio',t.precio_jornada); $('#te-horas').value=+t.horas_jornada;
   $('#te-pct').value=+t.extra_porcentaje; setMoney('#te-fijo',t.extra_fijo); $('#te-sab').value=+t.recargo_sabado; $('#te-dom').value=+t.recargo_domingo; $('#te-activo').checked=t.activo!==false;
   emodo=t.extra_modo; efrec=t.frecuencia; teCalc();
@@ -1873,6 +1899,7 @@ function pintarEmpresas(){
     <b>${esc(e.nombre)}</b> ${estadoEmp(e)}<br>
     <span class="muted">${esc(linkEmpresa(e.slug))}<br>${e.usuarios} usuario${e.usuarios==1?'':'s'}${e.dueno_tel?' · dueño '+esc(e.dueno_tel):' · sin teléfono de dueño'}${e.ultima_carga?' · última carga '+fd(e.ultima_carga):''}</span>
     <div class="emp-acc">
+      <button class="btn sm" data-ea="entrar" data-id="${e.id}">Entrar a la empresa</button>
       <button class="btn ghost sm" data-ea="act" data-id="${e.id}">${e.activa?'Pausar':'Activar'}</button>
       ${[30,60,90,180,365].map(d=>`<button class="btn ghost sm" data-ea="dias" data-d="${d}" data-id="${e.id}">+${d}</button>`).join('')}
       <button class="btn ghost sm" data-ea="otros" data-id="${e.id}">+ días…</button>
@@ -1880,6 +1907,7 @@ function pintarEmpresas(){
       <button class="btn ghost sm" data-ea="edit" data-id="${e.id}">Editar</button>
       <button class="btn ghost sm" data-ea="copiar" data-id="${e.id}">Copiar enlace</button>
       <button class="btn ghost sm" data-ea="wa" data-id="${e.id}">Invitar por WhatsApp</button>
+      <button class="btn bad sm" data-ea="reset" data-id="${e.id}">Borrar todos sus datos</button>
     </div></li>`).join('') : '<li class="muted">Todavía no hay empresas.</li>';
   $$('[data-ea]').forEach(b=>b.onclick=()=>accionEmp(b.dataset.ea,EMP.find(x=>x.id===b.dataset.id),+b.dataset.d));
 }
@@ -1899,6 +1927,8 @@ function accionEmp(a,e,d){
   if(a==='copiar') return copiar(linkEmpresa(e.slug));
   if(a==='wa'){ const t=tel10(e.dueno_tel); window.open('https://wa.me/'+(t?'549'+t:'')+'?text='+encodeURIComponent(mensajeInv(e)),'_blank'); return; }
   if(a==='edit') abrirEmp(e);
+  if(a==='entrar') return elegirEmpresa(e.id);
+  if(a==='reset') return reiniciarEmpresa(e);
 }
 function abrirEmp(e){
   empEdit=e||null; peDias=0;
@@ -1940,6 +1970,82 @@ $('#meFirmaOk').onclick=async()=>{
   if(error) return toast('Error: '+error.message);
   me.empresa.firma=f||null; store.set('go-cache',{me,T,en:Date.now()}); toast('Firma guardada');
 };
+
+/* ===================== Ventana con opciones ===================== */
+function elegir(tit,txt,ops){
+  return new Promise(res=>{
+    const d=$('#dlg'); $('#dlgTit').textContent=tit; $('#dlgTxt').textContent=txt;
+    $('#dlgBtns').innerHTML=ops.map((o,i)=>`<button class="btn ${o.cls||''}" data-i="${i}">${esc(o.t)}</button>`).join('');
+    const fin=v=>{ d.close(); res(v); };
+    $$('#dlgBtns button').forEach(b=>b.onclick=()=>fin(ops[+b.dataset.i].v));
+    d.oncancel=e=>{ e.preventDefault(); fin(null); };
+    d.showModal();
+  });
+}
+
+/* ===================== Dar de baja a un trabajador ===================== */
+$('#te-baja').onclick=async()=>{
+  const t=byId('trabajadores',editId); if(!t) return;
+  const nJ=T.jornadas.filter(j=>j.trabajador_id===t.id).length, nP=T.pagos.filter(p=>p.trabajador_id===t.id).length,
+        nA=T.adelantos.filter(a=>a.trabajador_id===t.id).length;
+  const v=await elegir(`Dar de baja a ${t.nombre}`,
+    `Tiene ${nJ} jornada${nJ===1?'':'s'}, ${nP} pago${nP===1?'':'s'} y ${nA} adelanto${nA===1?'':'s'} cargados. ¿Querés guardar sus registros?`,
+    [{t:'Sí, guardar sus registros',v:'guardar'},{t:'No, borrar todos sus registros',v:'borrar',cls:'bad'},{t:'Cancelar',v:null,cls:'ghost'}]);
+  if(!v) return;
+  if(v==='borrar' && !confirm(`Se van a borrar para siempre las jornadas, pagos, adelantos, caja y gastos a cuenta de ${t.nombre}. Los gastos de obra que pagó quedan, sin su nombre. Esto no se puede deshacer. ¿Seguro?`)) return;
+  if(!await online()) return;
+  if(v==='borrar'){
+    const fotos=T.gastos.filter(g=>g.a_cuenta_de===t.id&&g.comprobante).map(g=>g.comprobante);
+    if(fotos.length) await sb.storage.from('comprobantes').remove(fotos).catch(()=>{});
+  }
+  const {error}=await sb.rpc('baja_trabajador',{p_trab:t.id,p_borrar:v==='borrar'});
+  if(error) return toast('Error: '+error.message);
+  $('#trabEdit').classList.add('hide');
+  await cargarDatos(); llenarSelects(); render();
+  toast(v==='borrar'?`${t.nombre} dado de baja y sus registros borrados`:`${t.nombre} dado de baja. Sus registros quedan guardados`);
+};
+
+/* ===================== Creador: entrar a cada empresa ===================== */
+const yaElegido = () => { try{ return sessionStorage.getItem('go-elegido')==='1'; }catch(e){ return false; } };
+async function pantallaElegir(){
+  show('s-elegir');
+  const box=$('#elList');
+  const btnGeneral=`<button class="btn" data-el="">Entrar al Panel general<br><small style="font-weight:400">Empresas, cobros y textos de la app</small></button>`;
+  if(!navigator.onLine || !sb){ box.innerHTML=btnGeneral+'<p class="muted">Sin conexión no se pueden ver las empresas.</p>'; }
+  else{
+    const {data,error}=await sb.rpc('panel_empresas');
+    EMP=data||[];
+    box.innerHTML=btnGeneral+(error?`<p class="err">No se pudieron cargar las empresas: ${esc(error.message)}</p>`:
+      EMP.map(e=>`<button class="btn ghost el-emp" data-el="${e.id}"><span>Entrar a ${esc(e.nombre)}</span><small>${e.usuarios} usuario${e.usuarios==1?'':'s'}${!e.activa?' · pausada':e.vence&&diasRest(e.vence)<0?' · vencida':''}</small></button>`).join(''));
+  }
+  $$('#elList [data-el]').forEach(b=>b.onclick=()=>elegirEmpresa(b.dataset.el||null));
+}
+async function elegirEmpresa(id){
+  if(cola.length) return toast('Primero esperá que se suban las cargas pendientes');
+  if(!await online()) return;
+  const {error}=await sb.rpc('entrar_empresa',{p_empresa:id});
+  if(error) return toast('Error: '+error.message);
+  try{ sessionStorage.setItem('go-elegido','1'); }catch(e){}
+  store.del('go-cache'); location.reload();
+}
+$('#elSalir').onclick=()=>cerrarSesion(true);
+$('#creCambiar').onclick=()=>{ try{ sessionStorage.removeItem('go-elegido'); }catch(e){} pantallaElegir(); };
+
+/* ===================== Creador: borrar todos los datos de una empresa ===================== */
+async function reiniciarEmpresa(e){
+  const n=prompt(`Esto borra TODO lo cargado por ${e.nombre}: jornadas, gastos y fotos, pagos, adelantos, caja, cobros, trabajadores y obras.\nQuedan la empresa, sus usuarios, categorías y permisos.\nNo se puede deshacer.\n\nPara confirmar, escribí el nombre de la empresa:`);
+  if(n===null) return;
+  const norm=x=>String(x||'').trim().toLowerCase();
+  if(norm(n)!==norm(e.nombre)) return toast('El nombre no coincide. No se borró nada');
+  if(!await online()) return;
+  const {data,error}=await sb.rpc('reiniciar_empresa',{p_empresa:e.id});
+  if(error) return toast('Error: '+error.message);
+  const fotos=(data||[]).map(r=>r.foto).filter(Boolean);
+  for(let i=0;i<fotos.length;i+=100) await sb.storage.from('comprobantes').remove(fotos.slice(i,i+100)).catch(()=>{});
+  toast(`${e.nombre} quedó en cero`);
+  if(me.viendo_empresa===e.id){ store.del('go-cache'); location.reload(); return; }
+  cargarEmpresas();
+}
 
 /* ===================== Render general ===================== */
 function render(){ renderPanel(); pintarCola(); renderPend(); renderUltimas(); renderPagos(); renderMios(); renderInf(); renderEq(); }
