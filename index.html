@@ -75,6 +75,7 @@ input,select,textarea{width:100%;font:inherit;padding:12px;border-radius:10px;bo
 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .kpi{background:var(--bg);border-radius:10px;padding:10px}
 .kpi b{display:block;font-size:18px}
+.kpi span{display:block;font-size:12px;margin-top:2px}
 .pos{color:var(--ok)}.neg{color:var(--bad)}
 nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:6px 4px calc(6px + env(safe-area-inset-bottom));z-index:6}
 nav button{flex:1;background:none;border:0;color:var(--muted);font:12px system-ui;padding:6px 2px;cursor:pointer}
@@ -130,6 +131,11 @@ input[type=date]{min-width:0;max-width:100%;display:block;-webkit-appearance:non
 #fotoPrev img{width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
 .h2row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px}
 .h2row h2{margin:0}
+.per-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px}
+.per-nav b{flex:1;text-align:center;font-size:15px}
+.per-nav .icon-btn{min-width:44px;font-size:20px}
+#mioPagos li{cursor:pointer}
+#mioPagos pre.msg{margin:8px 0 0;width:100%}
 .tramo{border:1px solid var(--line);border-radius:12px;padding:4px 12px 12px;margin-top:12px;background:var(--bg)}
 .tramo input,.tramo select{background:var(--card)}
 .tramo .h2row{margin:8px 0 0}
@@ -404,12 +410,19 @@ input[type=date]{min-width:0;max-width:100%;display:block;-webkit-appearance:non
   <div class="card">
     <h2 id="mioTit">Mi detalle</h2>
     <div class="seg" id="mioPer">
-      <button data-p="semana" class="on">Esta semana</button>
-      <button data-p="mes">Este mes</button>
-      <button data-p="anio">Este año</button>
+      <button data-p="dia">Día</button>
+      <button data-p="semana" class="on">Semana</button>
+      <button data-p="mes">Mes</button>
+      <button data-p="anio">Año</button>
+      <button data-p="fechas">Elegir</button>
     </div>
-    <p class="muted" id="mioRango" style="margin:8px 0 0"></p>
+    <div class="per-nav" id="mioNav"><button class="icon-btn" id="mioAnt" aria-label="Anterior">‹</button><b id="mioRango"></b><button class="icon-btn" id="mioSig" aria-label="Siguiente">›</button></div>
+    <div class="row hide" id="mioFechas"><div><label>Desde</label><input type="date" id="mioDesde"></div><div><label>Hasta</label><input type="date" id="mioHasta"></div></div>
     <div class="kpis" id="mioKpis" style="margin-top:10px"></div>
+  </div>
+  <div class="card">
+    <h2>Cómo se calculó</h2>
+    <div id="mioCalc"></div>
   </div>
   <div class="card">
     <h2>Mis jornadas</h2>
@@ -425,6 +438,7 @@ input[type=date]{min-width:0;max-width:100%;display:block;-webkit-appearance:non
   </div>
   <div class="card">
     <h2>Mis pagos</h2>
+    <p class="muted" style="margin-top:-6px">Tocá un pago para ver el mensaje completo.</p>
     <ul class="list" id="mioPagos"></ul>
   </div>
   </div>
@@ -1379,8 +1393,9 @@ let pper='semana', liqT=null, liqCod=codigo();
 $$('#pagoPer button').forEach(b=>b.onclick=()=>{pper=b.dataset.p; $$('#pagoPer button').forEach(x=>x.classList.toggle('on',x===b)); $('#liqCard').classList.add('hide'); renderPagos();});
 const rango = () => pper==='dia' ? [hoyF(),hoyF()] : [lunes(),hoyF()];
 function jornadasPend(tid){ const [d,h]=rango(); return T.jornadas.filter(r=>r.trabajador_id===tid&&r.estado==='aprobado'&&!r.pago_id&&!r._pend&&r.fecha>=d&&r.fecha<=h); }
-function liq(t){
-  const js=jornadasPend(t.id), dias=js.filter(trabajadoJ).length, jor=js.reduce((a,r)=>a+jorPrecio(r),0);
+// Cuánto se gana con un grupo de jornadas: jornadas completas, días cortos y horas extra
+function desglose(t,js){
+  const dias=js.filter(trabajadoJ).length, jor=js.reduce((a,r)=>a+jorPrecio(r),0);
   const g={}; js.forEach(r=>{ const h=+r.horas_extra; if(!h) return; const k=(r.dia==='domingo'||r.dia==='feriado')?'domfer':(r.dia||'habil'); const v=jorValorExtra(r); const kk=k+'|'+v; g[kk]=g[kk]||{k,h:0,v}; g[kk].h+=h; });
   const ext2=Object.values(g).sort((a,b)=>['habil','sabado','domfer'].indexOf(a.k)-['habil','sabado','domfer'].indexOf(b.k)).map(x=>({...x,txt:{habil:'día hábil',sabado:'sábado',domfer:'domingo/feriado'}[x.k],m:x.h*x.v}));
   const extM=ext2.reduce((a,x)=>a+x.m,0), ext=ext2.reduce((a,x)=>a+x.h,0);
@@ -1388,8 +1403,9 @@ function liq(t){
   const jc=js.filter(j=>trabajadoJ(j)&&!corto(j)), jk=js.filter(corto);
   const precios=[...new Set(jc.map(jorPrecio))];
   const cortos={n:jk.length,h:jk.reduce((a,j)=>a+(+j.horas||0),0),m:jk.reduce((a,j)=>a+jorPrecio(j),0)};
-  return {js,dias,diasC:jc.length,mC:jc.reduce((a,j)=>a+jorPrecio(j),0),cortos,ext,ext2,jor,extM,bruto:jor+extM,precioTxt:precios.length===1?fmt(precios[0]):'varios precios'};
+  return {dias,diasC:jc.length,mC:jc.reduce((a,j)=>a+jorPrecio(j),0),cortos,ext,ext2,jor,extM,bruto:jor+extM,precioTxt:precios.length===1?fmt(precios[0]):'varios precios'};
 }
+function liq(t){ const js=jornadasPend(t.id); return {js,...desglose(t,js)}; }
 function renderPagos(){
   if(!puede('pagos')) return;
   const [d,h]=rango();
@@ -1481,43 +1497,70 @@ $('#waBtn').onclick=async()=>{
 };
 
 /* ===================== MI DETALLE (cada trabajador ve lo suyo) ===================== */
-let mper='semana';
+let mper='semana', mof=0;
 const fmtH = h => (+h||0).toLocaleString('es-AR',{maximumFractionDigits:2});
-$$('#mioPer button').forEach(b=>b.onclick=()=>{mper=b.dataset.p; $$('#mioPer button').forEach(x=>x.classList.toggle('on',x===b)); renderMios();});
-function mioDesde(){ const h=hoyF(); return mper==='semana'?lunes():mper==='mes'?h.slice(0,8)+'01':h.slice(0,5)+'01-01'; }
+$$('#mioPer button').forEach(b=>b.onclick=()=>{mper=b.dataset.p; mof=0; $$('#mioPer button').forEach(x=>x.classList.toggle('on',x===b)); renderMios();});
+$('#mioAnt').onclick=()=>{mof--; renderMios();};
+$('#mioSig').onclick=()=>{ if(mof<0){ mof++; renderMios(); } };
+['mioDesde','mioHasta'].forEach(i=>$('#'+i).addEventListener('change',renderMios));
+const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+// Período elegido (día, semana, mes, año o fechas a mano), con flechas para ir para atrás
+function mioRango(){
+  const d=new Date(hoyF()+'T12:00');
+  if(mper==='dia'){ d.setDate(d.getDate()+mof); const f=iso(d); return [f,f,mof===0?'Hoy, '+fd(f):fd(f)]; }
+  if(mper==='semana'){ const l=new Date(lunes()+'T12:00'); l.setDate(l.getDate()+7*mof); const h=new Date(l); h.setDate(h.getDate()+6); return [iso(l),iso(h),`Semana del ${fd(iso(l))} al ${fd(iso(h))}`]; }
+  if(mper==='mes'){ const a=new Date(d.getFullYear(),d.getMonth()+mof,1,12), b=new Date(d.getFullYear(),d.getMonth()+mof+1,0,12); return [iso(a),iso(b),`${MESES[a.getMonth()]} ${a.getFullYear()}`.replace(/^./,c=>c.toUpperCase())]; }
+  if(mper==='anio'){ const y=d.getFullYear()+mof; return [y+'-01-01',y+'-12-31','Año '+y]; }
+  let a=$('#mioDesde').value||hoyF().slice(0,8)+'01', b=$('#mioHasta').value||hoyF(); if(a>b) [a,b]=[b,a];
+  $('#mioDesde').value=a; $('#mioHasta').value=b; return [a,b,`Del ${fd(a)} al ${fd(b)}`];
+}
 function renderMios(){
   const tid=me.trabajador_id, ficha=tid&&byId('trabajadores',tid);
   $('#sinFicha').classList.toggle('hide',!!tid);
   $('#sinFicha').textContent = 'Tu usuario todavía no está vinculado a tu ficha de trabajador. Pedile al administrador que lo vincule (o que cargue tu teléfono en tu ficha).';
   $('#mioBox').classList.toggle('hide',!tid);
   if(!tid) return;
-  const desde=mioDesde(), hasta=hoyF(), hj=+(ficha?.horas_jornada)||8;
+  const [desde,hasta,txt]=mioRango(), hj=+(ficha?.horas_jornada)||8;
   $('#mioTit').textContent = ficha ? 'Detalle de '+ficha.nombre : 'Mi detalle';
-  $('#mioRango').textContent = `Del ${fd(desde)} al ${fd(hasta)}`;
+  $('#mioRango').textContent = txt;
+  $('#mioFechas').classList.toggle('hide',mper!=='fechas');
+  $('#mioAnt').classList.toggle('hide',mper==='fechas'); $('#mioSig').classList.toggle('hide',mper==='fechas'); $('#mioSig').disabled=mof>=0;
   const mias=T.jornadas.filter(j=>j.trabajador_id===tid);
   const enPer=mias.filter(j=>j.fecha>=desde&&j.fecha<=hasta&&j.estado!=='rechazado').sort((a,b)=>b.fecha.localeCompare(a.fecha));
   const ok=enPer.filter(j=>j.estado==='aprobado');
   const dias=ok.filter(trabajadoJ).length, ext=ok.reduce((a,j)=>a+ +j.horas_extra,0), hsTot=ok.reduce((a,j)=>a+horasJ(j),0), ganado=ok.reduce((a,j)=>a+jorTotal(j),0);
   const porCobrar=mias.filter(j=>j.estado==='aprobado'&&!j.pago_id).reduce((a,j)=>a+jorTotal(j),0);
   const ps=T.pagos.filter(p=>p.trabajador_id===tid).sort((a,b)=>String(b.cargado_en).localeCompare(String(a.cargado_en)));
-  const cobrado=ps.filter(p=>String(p.cargado_en).slice(0,10)>=desde).reduce((a,p)=>a+(+p.bruto - +p.descuento_adelanto),0);
-  $('#mioKpis').innerHTML=`<div class="kpi">Días trabajados<b>${dias}</b></div><div class="kpi">Horas<b>${fmtH(hsTot)} h${ext?` (${fmtH(ext)} extra)`:''}</b></div>`+
-    `<div class="kpi">Ganado en el período<b>${fmt(ganado)}</b></div><div class="kpi">Cobrado en el período<b>${fmt(cobrado)}</b></div>`+
+  const enRango = f => { const x=String(f).slice(0,10); return x>=desde&&x<=hasta; };
+  const psPer=ps.filter(p=>enRango(p.cargado_en));
+  const cobrado=psPer.reduce((a,p)=>a+(+p.bruto - +p.descuento_adelanto),0), descontado=psPer.reduce((a,p)=>a+ +p.descuento_adelanto,0);
+  const rinde=hsTot?ganado/hsTot:0;
+  $('#mioKpis').innerHTML=`<div class="kpi">Días trabajados<b>${dias}</b></div><div class="kpi">Horas trabajadas<b>${fmtH(hsTot)} h</b>${ext?`<span class="muted">${fmtH(hsTot-ext)} normales + ${fmtH(ext)} extra</span>`:''}</div>`+
+    `<div class="kpi">Ganado<b>${fmt(ganado)}</b></div><div class="kpi">Te rindió la hora<b>${rinde?fmt(rinde):'—'}</b><span class="muted">tu hora vale ${fmt(valorHora(ficha||{precio_jornada:0}))}</span></div>`+
+    `<div class="kpi">Cobrado<b>${fmt(cobrado)}</b>${descontado?`<span class="muted">te descontaron ${fmt(descontado)}</span>`:''}</div>`+
     `<div class="kpi">Por cobrar (todo)<b>${fmt(porCobrar)}</b></div><div class="kpi">Debo (adelantos y gastos)<b class="${saldoAdel(tid)>0?'neg':''}">${fmt(saldoAdel(tid))}</b></div>`;
+  // Cómo se calculó lo ganado (igual que el mensaje de pago)
+  const dg=ficha?desglose(ficha,ok):null, vh=ficha?valorHora(ficha):0;
+  $('#mioCalc').innerHTML = dg && (dg.dias||dg.ext) ? `<p class="muted" style="margin:0 0 6px">Tu jornada: ${fmt(ficha.precio_jornada)} por ${fmtH(hj)} h (${fmt(vh)} la hora)</p>`+
+    (dg.diasC?`<div class="line"><span>Jornadas completas: ${dg.diasC} × ${dg.precioTxt}</span><span>${fmt(dg.mC)}</span></div>`:'')+
+    (dg.cortos.n?`<div class="line"><span>Días cortos: ${fmtH(dg.cortos.h)} h × ${fmt(vh)}</span><span>${fmt(dg.cortos.m)}</span></div>`:'')+
+    dg.ext2.map(x=>`<div class="line"><span>Horas extra ${x.txt}: ${fmtH(x.h)} h × ${fmt(x.v)}</span><span>${fmt(x.m)}</span></div>`).join('')+
+    `<div class="line tot"><span>Total ganado</span><span>${fmt(dg.bruto)}</span></div>` : '<p class="muted" style="margin:0">No hay días trabajados en este período.</p>';
   const DIA={habil:'',sabado:' · sábado',domingo:' · domingo',feriado:' · feriado'};
   $('#mioJor').innerHTML=enPer.length?enPer.map(j=>{
     if(!trabajadoJ(j)) return `<li style="align-items:flex-start"><span>${fd(j.fecha)}${DIA[j.dia]||''} · ${ESTADO_DIA[j.estado_dia]||''}${j.nota?'<br><span class="muted">'+esc(j.nota)+'</span>':''}</span><b class="muted">—</b></li>`;
     const est=j.estado==='pendiente'?'<span class="tag warn">Esperando aprobación</span>':j.pago_id?'<span class="tag ok">Pagada</span>':'<span class="tag">Por cobrar</span>';
     const det=(j.tramos&&j.tramos.length)?j.tramos.map(tramoTxt).map(esc).join('<br>'):esc(obraN(j.obra_id));
     return `<li style="align-items:flex-start"><span>${fd(j.fecha)}${DIA[j.dia]||''}<br>${det}<br><span class="muted">${fmtH(horasJ(j))} h${+j.horas_extra?` · ${fmtH(+j.horas_extra)} h extra × ${fmt(jorValorExtra(j))}`:''}${j.vehiculo?' · '+esc(j.vehiculo):''}</span><br>${est}</span><b>${j.estado==='aprobado'?fmt(jorTotal(j)):''}</b></li>`;}).join(''):'<li class="muted">No hay jornadas en este período.</li>';
-  const movs=[...T.adelantos.filter(r=>r.trabajador_id===tid).map(r=>({f:r.fecha,txt:`Adelanto${r.motivo?' ('+esc(r.motivo)+')':''}`,m:+r.monto})),
-              ...aCuenta(tid).map(r=>({f:r.fecha,txt:`Gasto a tu cuenta (${esc(byId('categorias_gasto',r.categoria_id)?.nombre||'Gasto')}${r.nota?' · '+esc(r.nota):''})`,m:+r.monto})),
-              ...ps.filter(p=> +p.descuento_adelanto).map(p=>({f:String(p.cargado_en).slice(0,10),txt:'Descontado en un pago',m:-p.descuento_adelanto}))].sort((a,b)=>b.f.localeCompare(a.f));
+  const movs=[...T.adelantos.filter(r=>r.trabajador_id===tid&&enRango(r.fecha)).map(r=>({f:r.fecha,txt:`Adelanto${r.motivo?' ('+esc(r.motivo)+')':''}`,m:+r.monto})),
+              ...aCuenta(tid).filter(r=>enRango(r.fecha)).map(r=>({f:r.fecha,txt:`Gasto a tu cuenta (${esc(byId('categorias_gasto',r.categoria_id)?.nombre||'Gasto')}${r.nota?' · '+esc(r.nota):''})`,m:+r.monto})),
+              ...psPer.filter(p=> +p.descuento_adelanto).map(p=>({f:String(p.cargado_en).slice(0,10),txt:'Descontado en un pago',m:-p.descuento_adelanto}))].sort((a,b)=>b.f.localeCompare(a.f));
   const cm=cajaMovs(tid), cs=saldoCaja(tid);
   $('#mioCajaCard').classList.toggle('hide',!cm.length);
   $('#mioCaja').innerHTML=cm.map(x=>`<li><span>${fd(x.f)} · ${esc(x.txt)}</span><b class="${x.m>0?'pos':''}">${x.m>0?'+':'−'}${fmt(Math.abs(x.m))}</b></li>`).join('')+`<li><span><b>${cs<0?'Pusiste de tu bolsillo':'Te queda'}</b></span><b class="${cs<0?'neg':''}">${fmt(Math.abs(cs))}</b></li>`;
-  $('#mioAdel').innerHTML=movs.length?movs.map(x=>`<li><span>${fd(x.f)} · ${x.txt}</span><b class="${x.m>0?'neg':'pos'}">${x.m>0?'+':'−'}${fmt(Math.abs(x.m))}</b></li>`).join(''):'<li class="muted">No tenés adelantos ni gastos a tu cuenta.</li>';
-  $('#mioPagos').innerHTML=ps.length?ps.map(p=>`<li style="align-items:flex-start"><span>${fd(p.desde)} al ${fd(p.hasta)}${+p.descuento_adelanto?`<br><span class="muted">Bruto ${fmt(p.bruto)} − adelantos ${fmt(p.descuento_adelanto)}</span>`:''}<br>${p.estado==='confirmado'?`<span class="muted">Confirmaste el ${fdh(p.confirmado_en)}</span>`:`<a href="${APP_URL}?c=${esc(p.codigo)}">Confirmar que lo recibí</a>`}</span><b>${fmt(+p.bruto - +p.descuento_adelanto)}</b></li>`).join(''):'<li class="muted">Todavía no hay pagos.</li>';
+  $('#mioAdel').innerHTML=movs.length?movs.map(x=>`<li><span>${fd(x.f)} · ${x.txt}</span><b class="${x.m>0?'neg':'pos'}">${x.m>0?'+':'−'}${fmt(Math.abs(x.m))}</b></li>`).join(''):`<li class="muted">Nada en este período. En total debés ${fmt(saldoAdel(tid))}.</li>`;
+  $('#mioPagos').innerHTML=psPer.length?psPer.map(p=>`<li style="align-items:flex-start;flex-wrap:wrap" data-pago="${p.id}"><span>${fd(p.desde)} al ${fd(p.hasta)}${+p.descuento_adelanto?`<br><span class="muted">Bruto ${fmt(p.bruto)} − adelantos ${fmt(p.descuento_adelanto)}</span>`:''}<br>${p.estado==='confirmado'?`<span class="muted">Confirmaste el ${fdh(p.confirmado_en)}</span>`:`<a href="${APP_URL}?c=${esc(p.codigo)}">Confirmar que lo recibí</a>`}</span><b>${fmt(+p.bruto - +p.descuento_adelanto)}</b>${p.mensaje?`<pre class="msg hide">${esc(p.mensaje.replace(/\*/g,''))}</pre>`:''}</li>`).join(''):'<li class="muted">No hay pagos en este período.</li>';
+  $$('#mioPagos li[data-pago]').forEach(li=>li.onclick=e=>{ if(e.target.closest('a')) return; li.querySelector('pre')?.classList.toggle('hide'); });
 }
 
 /* ===================== INFORMES ===================== */
